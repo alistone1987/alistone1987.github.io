@@ -166,18 +166,20 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .quote figcaption{margin-top:24px;font-size:17px;color:var(--soft)}
 
 /* ---------- outro: text stays pinned, page fades to black, drips rain down with the scroll ---------- */
-.outro{position:relative;height:560vh;--t:0}
+.outro{position:relative;height:900vh;--t:0}
 .stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:grid;place-items:center;background:var(--paper)}
 .night{position:absolute;inset:0;background:#000;opacity:var(--t)}
 .rain{position:absolute;inset:0;width:100%;height:100%;display:block}
 .drop{position:relative;z-index:1;padding:clamp(112px,16vw,240px) var(--gutter);text-align:center;color:color-mix(in srgb,#F3F2EE calc(var(--t) * 100%),var(--ink))}
 .drop h2{font-size:clamp(52px,10vw,160px);max-width:9ch;margin-inline:auto;display:grid}
 .drop .say{grid-area:1/1;align-self:center;transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1)}
-.drop .say-keep{opacity:0;transform:translateY(.25em)}
-.outro[data-say="keep"] .say-drop{opacity:0;transform:translateY(-.25em)}
+.drop .say-keep,.drop .say-rain{opacity:0;transform:translateY(.25em)}
+.outro[data-say="keep"] .say-drop,.outro[data-say="rain"] .say-drop{opacity:0;transform:translateY(-.25em)}
+.outro[data-say="rain"] .say-keep{opacity:0;transform:translateY(-.25em)}
+.outro[data-say="rain"] .say-rain{opacity:1;transform:none}
 .outro[data-say="keep"] .say-keep{opacity:1;transform:none}
 .drop .btn{transition:opacity .4s ease}
-.outro[data-say="keep"] .drop .btn{opacity:0;pointer-events:none}
+.outro[data-say="keep"] .drop .btn,.outro[data-say="rain"] .drop .btn{opacity:0;pointer-events:none}
 .drop .btn{margin-top:clamp(28px,4vw,48px);background:color-mix(in srgb,#F3F2EE calc(var(--t) * 100%),var(--ink));color:color-mix(in srgb,#000 calc(var(--t) * 100%),var(--paper))}
 .drop .btn:hover{background:#FF6A13;color:#232323}
 .drop{opacity:calc(1 - var(--x,0));transform:translateY(calc(var(--x,0) * -24px))}
@@ -332,7 +334,7 @@ footer a:focus-visible{outline-color:#FF6A13}
       <div class="pins" role="list" aria-label="Some of our favourite bars and restaurants"></div>
       <button class="btn drop-more" type="button"><svg viewBox="0 0 22 28" aria-hidden="true" style="width:14px;height:18px;fill:currentColor;stroke:none"><path d="M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z"/></svg><span class="t">Drop more</span></button>
       <section class="drop">
-        <h2 aria-label="Drop it like it’s hot"><span class="say say-drop" aria-hidden="true">Drop it like it’s hot</span><span class="say say-keep" aria-hidden="true">Keep scrolling</span></h2>
+        <h2 aria-label="Drop it like it’s hot"><span class="say say-drop" aria-hidden="true">Drop it like it’s hot</span><span class="say say-keep" aria-hidden="true">Keep scrolling</span><span class="say say-rain" aria-hidden="true">Make it rain</span></h2>
         <a class="btn" href="mailto:alastair.stone@gmail.com">Invite us to your place</a>
       </section>
     </div>
@@ -419,7 +421,7 @@ footer a:focus-visible{outline-color:#FF6A13}
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   var DROP = new Path2D('M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'); // 22 x 28
   var W = 0, H = 0, dpr = 1, drips = [];
-  var target = 0, shown = 0, D = 0, raf = 0, prevT = 0, inView = false, active = 0;
+  var target = 0, shown = 0, D = 0, pxPerQ = 1, raf = 0, prevT = 0, inView = false, active = 0;
   var rnd = (function(seed){ return function(){ seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; })(20231109);
 
   // Three parallax layers. Far drops are small, faint and slow; near drops are bigger, brighter and faster.
@@ -433,7 +435,8 @@ footer a:focus-visible{outline-color:#FF6A13}
     for (var i = 0; i < n; i++){
       var u = rnd(), L = u < LAYERS[0].share ? LAYERS[0] : u < LAYERS[0].share + LAYERS[1].share ? LAYERS[1] : LAYERS[2];
       drips.push({
-        x: rnd(),
+        x: (0.5 + i * 0.7548776662 + (rnd() - 0.5) * 0.05) % 1,       // evenly spread across the width, so drops don't stack into vertical lines
+        ph: (0.5 + i * 0.5698402910 + (rnd() - 0.5) * 0.05) % 1,       // and spread down the height (a 2-D low-discrepancy pattern)
         size: L.size[0] + rnd() * (L.size[1] - L.size[0]),
         speed: L.speed * (0.92 + rnd() * 0.16),           // tiny variation inside a layer, so it doesn't look mechanical
         offset: rnd() * 0.25,                             // a little way above the top when it joins
@@ -446,6 +449,7 @@ footer a:focus-visible{outline-color:#FF6A13}
   // Drift: screen-heights per second for a speed-1 drop. Starts gentle and builds as you go deeper.
   function drift(r){ return 0.12 + 0.28 * r; }
   // Scrolling adds a little push on top, capped and smoothed (eases in fast, eases out slowly), so it never races.
+  var SCROLL_K = 1.1, IDLE_DRIFT = 0.025;
   var BOOST_MAX = 0.45, BOOST_GAIN = 1.6, ATTACK = 0.22, RELEASE = 0.7, boost = 0;
   // Rain only begins once the background has fully turned black (fade ends at 0.3).
   // Timeline through the section: fade to black 0–0.22, rain builds 0.24–0.70, clears 0.70–0.78, map 0.76–0.86, pins land from 0.86.
@@ -462,8 +466,16 @@ footer a:focus-visible{outline-color:#FF6A13}
     build(); draw(0);
   }
   function progress(){
-    var r = outro.getBoundingClientRect(), span = outro.offsetHeight - window.innerHeight;
-    return Math.min(1, Math.max(0, -r.top / (span || 1)));
+    // The section is taller than the original 560vh design. The extra scroll goes only into the rain stretch
+    // (between the fade to black and the map), so the fade and the map keep their original pace.
+    var r = outro.getBoundingClientRect(), vh = window.innerHeight, span = outro.offsetHeight - vh;
+    var old = 4.6 * vh, extra = Math.max(0, span - old), A = 0.24, B = 0.70;
+    var s = Math.min(span, Math.max(0, -r.top)), midLen = (B - A) * old + extra;
+    var q = s < A * old ? s / old
+          : s < A * old + midLen ? A + (s - A * old) / midLen * (B - A)
+          : (s - extra) / old;
+    pxPerQ = midLen / (B - A);                      // scroll pixels per unit of progress while it rains
+    return Math.min(1, Math.max(0, q));
   }
   function draw(dD){
     outro.style.setProperty('--t', ramp(shown, 0, 0.22).toFixed(4));
@@ -471,7 +483,7 @@ footer a:focus-visible{outline-color:#FF6A13}
     outro.style.setProperty('--m', ramp(shown, 0.76, 0.86).toFixed(4));          // map comes up
     outro.classList.toggle('mapped', shown > 0.79);
     // headline: 'Drop it like it's hot' while it fades to black, then 'Keep scrolling', which fades out as the map comes up
-    var say = shown > 0.26 ? 'keep' : 'drop';
+    var say = shown > 0.5 ? 'rain' : shown > 0.26 ? 'keep' : 'drop';
     if (outro.dataset.say !== say) outro.dataset.say = say;
     pinsFor(shown);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -481,22 +493,18 @@ footer a:focus-visible{outline-color:#FF6A13}
     active = 0;
     for (var i = 0; i < drips.length; i++){
       var d = drips[i];
-      if (!d.on){
-        if (d.appear >= frac) continue;
-        d.on = true; d.start = D; d.retire = -1;                // joins from just above the top
-      }
-      var pos = ((D - d.start) * d.speed - d.offset) * travel;
-      if (pos < 0) continue;                                    // not arrived yet
+      // A drop's place is a pure function of the scroll (D): scroll either way and it moves either way, wrapping round the
+      // top and bottom, so nothing is hidden or reset when you reverse. Drops come and go by fading, not by jumping.
+      var vis = Math.min(1, Math.max(0, (frac - d.appear) / 0.06));
+      if (vis <= 0) continue;
+      var pos = D * d.speed * travel + d.ph * travel;
       var loop = Math.floor(pos / travel);
-      if (d.appear >= frac){                                   // scrolled back up: finish this fall, then leave
-        if (d.retire < 0) d.retire = loop;
-        if (loop > d.retire){ d.on = false; continue; }
-      } else d.retire = -1;
+      pos = pos - loop * travel + travel;                         // keep it positive, one full travel in
       var y = (pos % travel) - 60;
       active++;
-      var len = d.size * 1.27, moved = dD * d.speed * travel;
+      var len = d.size * 1.27, moved = Math.abs(dD) * d.speed * travel;
       var stretch = 1 + Math.min(0.5, moved / len * 0.35);      // a gentle lengthening when moving faster
-      var s = d.size / 22, cx = d.x * W, fadeIn = Math.min(1, pos / (travel * 0.15));
+      var s = d.size / 22, cx = d.x * W, fadeIn = vis * Math.min(1, Math.min(y + 60, travel - y - 60) / (travel * 0.08));
 
       // Reactions: now and then a mid or near drop gets "tapped" like a post and pops into a 🔥 or ❤️
       if (d.loop !== loop){
@@ -512,7 +520,7 @@ footer a:focus-visible{outline-color:#FF6A13}
         ctx.save();
         ctx.globalAlpha = d.alpha * fadeIn;
         ctx.fillStyle = '#F3F2EE';
-        ctx.translate(cx, y - len * (stretch - 1) + len / 2);
+        ctx.translate(cx, (dD < 0 ? y : y - len * (stretch - 1)) + len / 2);   // tail trails behind, whichever way it's moving
         ctx.scale(s * k, s * stretch * k);
         ctx.translate(-11, -14);
         ctx.fill(DROP);
@@ -675,7 +683,11 @@ footer a:focus-visible{outline-color:#FF6A13}
       boost += (want - boost) * (1 - Math.exp(-dt / tau));
     }
     if (r > 0 && !reduce.matches){
-      dD = dt * (drift(r) + boost);                              // constant drift + smoothed scroll push
+      // The scroll drives the drops. Each pixel scrolled moves them by SCROLL_K screen-heights per screen scrolled
+      // (far drops slower than near ones, so it keeps its depth): scroll down and they fall, scroll up and they rise,
+      // and when you stop they stop. Only a faint ambient drift is left so the scene never looks frozen.
+      var scrolled = (shown - before) * pxPerQ / (window.innerHeight || 1);   // screens scrolled this frame (signed)
+      dD = scrolled * SCROLL_K + dt * IDLE_DRIFT * r;
       D += dD;
     }
     stepParts(dt);
@@ -776,6 +788,21 @@ footer a:focus-visible{outline-color:#FF6A13}
     root.classList.add('reveal-armed');
     els.forEach(function(el){ io.observe(el); });
   }); });
+})();
+</script>
+<script>
+/* Live Instagram: swaps the reel's built-in photos for the latest @leamingtondrop posts.
+   If the API is unreachable the built-in photos stay, so the page never breaks. */
+(function(){
+  var API = '/api/instagram';
+  fetch(API).then(function(r){ return r.ok ? r.json() : Promise.reject(); }).then(function(posts){
+    if (!posts || !posts.length) return;
+    var imgs = document.querySelectorAll('.reel img');
+    imgs.forEach(function(img, i){
+      var p = posts[i % posts.length], clone = img.closest('li').hasAttribute('aria-hidden');
+      img.src = p.src; img.alt = clone ? '' : p.alt;
+    });
+  }).catch(function(){});
 })();
 </script>
 </body>

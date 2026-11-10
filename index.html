@@ -163,6 +163,9 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .js-reveal [data-reveal]{opacity:0;transform:translateY(40px)}
 .js-reveal h2[data-reveal]{transform:translateY(.45em)}
 .js-reveal blockquote[data-reveal]{transform:translateY(.4em)}
+.steps li{transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1)}
+.steps.h-pre h2{opacity:0}
+.steps.intro-pre li{opacity:0;transform:translateY(28px)}
 .reveal-armed [data-reveal]{transition:opacity .7s cubic-bezier(.22,1,.36,1) calc(var(--i,0) * 90ms),transform .9s cubic-bezier(.22,1,.36,1) calc(var(--i,0) * 90ms)}
 .js-reveal [data-reveal].in{opacity:1;transform:none}
 :root[data-theme="dark"] .steps{--rev-bg:#2C2C2A}
@@ -978,13 +981,6 @@ html.loading{overflow:hidden}
   [['#love-leam h2', '#love-leam .prose p'], ['.quote blockquote', '.quote figcaption']].forEach(function(g){
     var i = 0; g.forEach(function(sel){ document.querySelectorAll(sel).forEach(function(el){ tag(el, i++); }); });
   });
-  // How we drop: heading, then each step left to right, with its number leading its title and copy
-  tag(document.querySelector('#how h2'), 0);
-  document.querySelectorAll('#how li').forEach(function(li, k){
-    tag(li.querySelector('.n'), 1 + k * 1.5);
-    tag(li.querySelector('h3'), 2 + k * 1.5);
-    tag(li.querySelector('p'), 2.6 + k * 1.5);
-  });
   var root = document.documentElement;
   root.classList.add('js-reveal');
   var io = new IntersectionObserver(function(entries){
@@ -1017,7 +1013,7 @@ html.loading{overflow:hidden}
 /* Hovering "Three is the magic number": the heading fades out, each line in LINES fades in as typing, holds, fades out, then the heading returns. */
 (function(){
   var sec = document.getElementById('how'), h = sec && sec.querySelector('h2'); if (!h) return;
-  var LINES = ["Yes, it is, it's the magic number", "Somewhere in the Leam Spa community", "It’s the magic number"];   // <- the two lines to type out
+  var LINES = ["Yes, it is, it's the magic number", "Somewhere in the Leam Spa community", "It’s the magic number"]; window.__magicLines = LINES;   // <- the two lines to type out
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)'), orig = h.textContent, run = 0, busy = false;
   h.style.transition = 'opacity .4s ease';
   function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
@@ -1040,10 +1036,10 @@ html.loading{overflow:hidden}
   }
   function reset(){ if (!busy) return; run++; busy = false; h.textContent = orig; h.style.opacity = 1; h.style.minHeight = ''; }
   var armed = true;   // plays once per visit; also fires on the first mouse move, since scrolling under a still cursor doesn't always send "enter"
-  function go(e){ if (armed && e.pointerType !== 'touch'){ armed = false; play(); } }
+  function go(e){ if (window.__introBusy) return; if (armed && e.pointerType !== 'touch'){ armed = false; play(); } }
   sec.addEventListener('pointerenter', go);
   sec.addEventListener('pointermove', go);
-  sec.addEventListener('pointerdown', function(){ if (armed){ armed = false; play(); } });   // tap on touch screens
+  sec.addEventListener('pointerdown', function(){ if (armed && !window.__introBusy){ armed = false; play(); } });   // tap on touch screens
   sec.addEventListener('pointerleave', function(){ armed = true; reset(); });
   document.addEventListener('pointerdown', function(e){ if (!armed && !sec.contains(e.target)){ armed = true; reset(); } });   // touch: tap elsewhere to stop
 })();
@@ -1065,6 +1061,54 @@ html.loading{overflow:hidden}
     var r = sec.getBoundingClientRect(); if (ly < r.top || ly > r.bottom || lx < r.left || lx > r.right) hide();
   }, { passive: true });
   document.addEventListener('pointerleave', hide); window.addEventListener('blur', hide);
+})();
+</script>
+<script>
+/* "Three is the magic number" intro, once, as the section scrolls into view: the first line types out, the heading returns, then the three steps fade in one after another. */
+(function(){
+  var sec = document.getElementById('how'), h = sec && sec.querySelector('h2'); if (!h) return;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (!('IntersectionObserver' in window) || reduce.matches) return;
+  var steps = [].slice.call(sec.querySelectorAll('li')), orig = h.textContent;
+  sec.classList.add('intro-pre', 'h-pre');   // title stays blank until the middle of the section reaches the middle of the screen
+  function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  async function type(t){ h.style.opacity = 1; for (var c = 1; c <= t.length; c++){ h.textContent = t.slice(0, c); await wait(42); } }
+  async function fadeOut(){ h.style.opacity = 0; await wait(400); }
+  async function intro(){
+    window.__introBusy = true; var lines = [orig].concat(window.__magicLines || []);   // the heading itself is the first line
+    h.style.minHeight = h.offsetHeight + 'px'; h.style.transition = 'opacity .4s ease';
+    await wait(700);   // a beat after it comes into view, with the title still blank
+    h.textContent = ''; sec.classList.remove('h-pre');
+    for (var n = 0; n < lines.length; n++){
+      h.textContent = ''; await type(lines[n]);
+      if (n === 0){   // line 1 has finished: the three steps fade in one after another, then on to the next line
+        for (var i = 0; i < steps.length; i++){ steps[i].style.transitionDelay = (i * 280) + 'ms'; }
+        sec.classList.remove('intro-pre');
+        await wait(steps.length * 280 + 900);
+        steps.forEach(function(li){ li.style.transitionDelay = ''; });
+      } else { await wait(1400); }
+      await fadeOut();
+    }
+    sec.classList.remove('intro-pre');
+    loop();   // then it keeps going: every line, the heading, and round again while the section is on screen
+  }
+  var vis = true;
+  new IntersectionObserver(function(es){ vis = es[0].isIntersecting; }, { threshold: 0.15 }).observe(sec);
+  async function loop(){
+    var lines = [orig].concat(window.__magicLines || []);
+    while (true){
+      for (var n = 0; n < lines.length; n++){
+        while (!vis){ if (h.textContent !== orig){ h.textContent = orig; h.style.opacity = 1; } await wait(300); }   // paused off-screen, resting on the heading
+        h.textContent = '';
+        await type(lines[n]); await wait(n === 0 ? 2000 : 1400);
+        await fadeOut();
+      }
+    }
+  }
+  // starts when the title itself comes into view
+  // wait for the loading screen to leave first, otherwise the first line plays unseen behind it
+  var io = new IntersectionObserver(function(es){ if (es[0].isIntersecting){ io.disconnect(); intro(); } }, { threshold: 0.9 });
+  (function ready(){ if (document.getElementById('loader')) return setTimeout(ready, 150); io.observe(h); })();
 })();
 </script>
 </body>

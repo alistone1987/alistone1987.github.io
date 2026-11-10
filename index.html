@@ -46,7 +46,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .bar .n1 .dot{position:absolute;left:-9px;top:calc(50% - 2.5px);translate:0 -50%}
 .bar .mark{position:absolute;left:50%;top:50%;translate:-50% -50%;width:44px;height:44px;display:grid;place-items:center;color:var(--ink)}
 .bar .mark svg{width:22px;height:28px;fill:currentColor;transition:transform .5s cubic-bezier(.22,1,.36,1)}
-.bar .mark:hover svg{transform:translateY(3px)}
+.bar .mark:hover .gdrop{transform:translateY(3px)}
+/* the nav drop is the same iridescent glass drop as the loader, just smaller (so the blurs and lighting are scaled down to match) */
+.gdrop{display:block;position:relative;width:24px;aspect-ratio:22/28;filter:url(#pearl-sm);transition:transform .5s cubic-bezier(.22,1,.36,1)}
+.gdrop .loader-art i{filter:blur(2px)}
 
 /* hero wordmark + tagline band */
 .logo-wrap{container-type:inline-size;padding:clamp(6px,.76vw,11px) var(--pad) clamp(10px,1.3vw,19px);overflow:hidden}
@@ -282,6 +285,19 @@ html.loading{overflow:hidden}
     <feComposite in="withRim" in2="gloss" operator="arithmetic" k1="0" k2="1" k3=".25" k4="0" result="lit"/>
     <feGaussianBlur in="lit" stdDeviation="0.35"/>   <!-- just enough to take the jaggedness off the outline -->
   </filter>
+  <filter id="pearl-sm" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="bump"/>
+    <feDiffuseLighting in="bump" surfaceScale="2.5" diffuseConstant="1" lighting-color="#ffffff" result="shade"><fePointLight x="8" y="2" z="40"/></feDiffuseLighting>
+    <feComposite in="SourceGraphic" in2="shade" operator="arithmetic" k1="1.15" k2="0.22" k3="0" k4="0" result="shaded"/>
+    <feSpecularLighting in="bump" surfaceScale="2.5" specularConstant=".7" specularExponent="12" lighting-color="#ffffff" result="spec"><fePointLight x="8" y="-2" z="36"/></feSpecularLighting>
+    <feComposite in="spec" in2="SourceAlpha" operator="in" result="gloss"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="2.8" result="soft"/>
+    <feComposite in="SourceAlpha" in2="soft" operator="arithmetic" k1="-1" k2="1" k3="0" k4="0" result="edge"/>
+    <feFlood flood-color="#ffe6f8" flood-opacity=".22"/>
+    <feComposite in2="edge" operator="in" result="rim"/>
+    <feComposite in="shaded" in2="rim" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="withRim"/>
+    <feComposite in="withRim" in2="gloss" operator="arithmetic" k1="0" k2="1" k3=".25" k4="0"/>
+  </filter>
 </defs></svg>
 <div class="loader" id="loader" aria-hidden="true"><div class="loader-drop"><div class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></div></div></div>
 <script>
@@ -309,7 +325,7 @@ html.loading{overflow:hidden}
     <a class="n3" href="#how">How we drop</a>
     <a class="n4" href="#contact">Contact</a>
   </div>
-  <a class="mark" href="#top" aria-label="Back to top"><svg viewBox="0 0 22 28" aria-hidden="true"><path d="M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z"/></svg></a>
+  <a class="mark" href="#top" aria-label="Back to top"><span class="gdrop" aria-hidden="true"><span class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></span></span></a>
 </nav>
 
 <div class="mnav">

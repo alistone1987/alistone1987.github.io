@@ -1184,11 +1184,21 @@ html.loading{overflow:hidden}
     for (var k = 1; k <= n; k++) dab(from[0] + dx * k / n, from[1] + dy * k / n, R);
   }
   function place(e){ cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'; }
+  // the drawing wipes itself 5s after you stop drawing: it fades out, then the canvas is cleared
+  var wipeT = null, clearT = null;
+  function cancelWipe(){ clearTimeout(wipeT); clearTimeout(clearT); cv.style.transition = 'none'; cv.style.opacity = 1; }
+  function scheduleWipe(){
+    clearTimeout(wipeT); clearTimeout(clearT);
+    wipeT = setTimeout(function(){
+      cv.style.transition = 'opacity 1.2s ease'; cv.style.opacity = 0;
+      clearT = setTimeout(function(){ ctx.clearRect(0, 0, cv.width, cv.height); cv.style.transition = 'none'; cv.style.opacity = 1; }, 1300);
+    }, 5000);
+  }
   cv.addEventListener('pointerenter', function(e){ if (e.pointerType === 'touch') return; place(e); cur.classList.add('on'); wrap.classList.add('crayon-on'); });
   cv.addEventListener('pointerleave', function(){ if (down) return; cur.classList.remove('on'); wrap.classList.remove('crayon-on'); });
   cv.addEventListener('pointerdown', function(e){
     if (e.pointerType === 'touch' || e.button !== 0) return;
-    down = true; cv.setPointerCapture(e.pointerId); cur.classList.add('down'); last = local(e); dab(last[0], last[1], radius()); place(e); e.preventDefault();
+    cancelWipe(); down = true; cv.setPointerCapture(e.pointerId); cur.classList.add('down'); last = local(e); dab(last[0], last[1], radius()); place(e); e.preventDefault();
   });
   cv.addEventListener('pointermove', function(e){
     if (e.pointerType === 'touch') return; place(e); cur.classList.add('on'); wrap.classList.add('crayon-on');
@@ -1196,7 +1206,7 @@ html.loading{overflow:hidden}
     var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; if (!evs.length) evs = [e];
     evs.forEach(function(ev){ var p = local(ev); stroke(last, p); last = p; });
   });
-  function up(e){ if (!down) return; down = false; cur.classList.remove('down'); try { cv.releasePointerCapture(e.pointerId); } catch (_) {} var b = cv.getBoundingClientRect(); if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom){ cur.classList.remove('on'); wrap.classList.remove('crayon-on'); } }
+  function up(e){ if (!down) return; down = false; scheduleWipe(); cur.classList.remove('down'); try { cv.releasePointerCapture(e.pointerId); } catch (_) {} var b = cv.getBoundingClientRect(); if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom){ cur.classList.remove('on'); wrap.classList.remove('crayon-on'); } }
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   window.addEventListener('scroll', function(){ if (!down && cur.classList.contains('on')){ var b = cv.getBoundingClientRect(), y = parseFloat(cur.style.transform.split(',')[1]) || 0; if (y < b.top || y > b.bottom){ cur.classList.remove('on'); wrap.classList.remove('crayon-on'); } } }, { passive: true });
 })();

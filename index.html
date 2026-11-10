@@ -222,6 +222,13 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .pin .label:focus-within .st,.pin.active .label .st{max-width:6em;opacity:1;margin-left:7px}
 @media (hover:hover){.pin .label:hover .st{max-width:6em;opacity:1;margin-left:7px}}
 .pin .label,.pin .label a{cursor:pointer}
+/* spinning black & white CD follows the pointer over the "magic number" section (mouse only) */
+.cd{position:fixed;left:0;top:0;width:56px;height:56px;margin:-28px 0 0 -28px;z-index:200;pointer-events:none;opacity:0;transition:opacity .2s ease;will-change:transform}
+.cd i{display:block;width:100%;height:100%;background:url(img/cursor-cd.png) center/contain no-repeat;filter:drop-shadow(0 3px 8px rgba(0,0,0,.45));animation:cd-spin 2.4s linear infinite}
+.cd.on{opacity:1}
+@keyframes cd-spin{to{transform:rotate(360deg)}}
+@media (hover:hover) and (pointer:fine){#how.cd-on,#how.cd-on *{cursor:none}}
+@media (prefers-reduced-motion:reduce){.cd i{animation:none}}
 .outro.mapped .pin .tear{pointer-events:auto;cursor:pointer}
 .pin .label{pointer-events:auto;transition:scale .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s ease}
 .pin{transition:opacity .25s ease}
@@ -1004,6 +1011,60 @@ html.loading{overflow:hidden}
       if (p.link) img.closest('li').setAttribute('data-href', p.link);   // each photo opens its own post
     });
   }).catch(function(){});
+})();
+</script>
+<script>
+/* Hovering "Three is the magic number": the heading fades out, each line in LINES fades in as typing, holds, fades out, then the heading returns. */
+(function(){
+  var sec = document.getElementById('how'), h = sec && sec.querySelector('h2'); if (!h) return;
+  var LINES = ["Yes, it is, it's the magic number", "Somewhere in this Leamington Spa community"];   // <- the two lines to type out
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)'), orig = h.textContent, run = 0, busy = false;
+  h.style.transition = 'opacity .4s ease';
+  function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  async function fade(t, to){ h.style.opacity = to; await wait(t); }
+  async function play(){
+    if (busy || reduce.matches) return; busy = true; var me = ++run;
+    h.style.minHeight = h.offsetHeight + 'px'; h.setAttribute('aria-label', orig);
+    await fade(400, 0);
+    while (me === run){   // loops for as long as the pointer stays: line 1, line 2, the heading, repeat
+      for (var i = 0; i < LINES.length && me === run; i++){
+        h.textContent = ''; h.style.opacity = 1;
+        for (var c = 1; c <= LINES[i].length && me === run; c++){ h.textContent = LINES[i].slice(0, c); await wait(42); }
+        if (me !== run) break;
+        await wait(1400); await fade(400, 0);
+      }
+      if (me !== run) break;
+      h.textContent = orig; await fade(400, 1); await wait(1800); if (me !== run) break; await fade(400, 0);
+    }
+    busy = false;
+  }
+  function reset(){ if (!busy) return; run++; busy = false; h.textContent = orig; h.style.opacity = 1; h.style.minHeight = ''; }
+  var armed = true;   // plays once per visit; also fires on the first mouse move, since scrolling under a still cursor doesn't always send "enter"
+  function go(e){ if (armed && e.pointerType !== 'touch'){ armed = false; play(); } }
+  sec.addEventListener('pointerenter', go);
+  sec.addEventListener('pointermove', go);
+  sec.addEventListener('pointerdown', function(){ if (armed){ armed = false; play(); } });   // tap on touch screens
+  sec.addEventListener('pointerleave', function(){ armed = true; reset(); });
+  document.addEventListener('pointerdown', function(e){ if (!armed && !sec.contains(e.target)){ armed = true; reset(); } });   // touch: tap elsewhere to stop
+})();
+</script>
+<div class="cd" id="cd" aria-hidden="true"><i></i></div>
+<script>
+(function(){
+  var sec = document.getElementById('how'), cd = document.getElementById('cd'); if (!sec || !cd) return;
+  if (!window.matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  function move(e){ cd.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'; }
+  sec.addEventListener('pointerenter', function(e){ if (e.pointerType === 'touch') return; move(e); cd.classList.add('on'); sec.classList.add('cd-on'); });
+  sec.addEventListener('pointermove', function(e){ if (e.pointerType === 'touch') return; move(e); cd.classList.add('on'); sec.classList.add('cd-on'); });
+  sec.addEventListener('pointerleave', function(){ hide(); });
+  function hide(){ cd.classList.remove('on'); sec.classList.remove('cd-on'); }
+  // scrolling moves the section under a still cursor without a pointerleave, so re-check against the section's box
+  var lx = -1, ly = -1; sec.addEventListener('pointermove', function(e){ lx = e.clientX; ly = e.clientY; });
+  window.addEventListener('scroll', function(){
+    if (!cd.classList.contains('on')) return;
+    var r = sec.getBoundingClientRect(); if (ly < r.top || ly > r.bottom || lx < r.left || lx > r.right) hide();
+  }, { passive: true });
+  document.addEventListener('pointerleave', hide); window.addEventListener('blur', hide);
 })();
 </script>
 </body>

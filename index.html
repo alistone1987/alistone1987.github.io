@@ -121,8 +121,7 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .prose p:last-child{margin-bottom:0}
 .prose .prose-cta{margin-top:clamp(28px,3vw,40px)}
 .prose .btn.ghost{text-decoration:none}
-.prose a{text-decoration-color:var(--park);text-decoration-thickness:2px;text-underline-offset:3px}
-:root[data-theme="dark"] .prose a{text-decoration-color:#FF5514}   /* orange link underlines on dark */
+.prose a{text-decoration-color:#FF5514;text-decoration-thickness:2px;text-underline-offset:3px}
 
 .steps{--rev-bg:#232323;--rev-ink:#F3F2EE;--rev-soft:#BDBBB5;--rev-line:#45443F;--rev-accent:#FF5514;background:var(--rev-bg);color:var(--rev-ink)}
 .steps a:focus-visible{outline-color:var(--rev-accent)}
@@ -161,6 +160,9 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 :root[data-theme="dark"] .steps{--rev-bg:#2C2C2A}
 .quote blockquote{margin:0;max-width:22ch;font-size:clamp(32px,5vw,72px);line-height:1.04;font-weight:500;letter-spacing:-.02em;font-variation-settings:"opsz" 72}
 .quote figcaption{margin-top:24px;font-size:17px;color:var(--soft)}
+.quote figcaption a{display:inline-flex;align-items:center;gap:12px;text-decoration:none}
+.quote figcaption a span{text-decoration:underline;text-decoration-color:#FF5514;text-decoration-thickness:2px;text-underline-offset:4px}
+.quote figcaption img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;filter:grayscale(1)}
 
 /* ---------- outro: text stays pinned, page fades to black, drips rain down with the scroll ---------- */
 .outro{position:relative;height:900vh;--t:0}
@@ -177,8 +179,8 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .outro[data-say="keep"] .say-keep{opacity:1;transform:none}
 .drop .btn{transition:opacity .4s ease}
 .outro[data-say="keep"] .drop .btn,.outro[data-say="rain"] .drop .btn{opacity:0;pointer-events:none}
-.drop .btn{margin-top:clamp(28px,4vw,48px);background:color-mix(in srgb,#F3F2EE calc(var(--t) * 100%),var(--ink));color:color-mix(in srgb,#000 calc(var(--t) * 100%),var(--paper))}
-.drop .btn:hover{background:#FF5514;color:#232323}
+.drop .btn{margin-top:clamp(28px,4vw,48px);background:color-mix(in srgb,#FF5514 calc(var(--t) * 100%),var(--ink));color:color-mix(in srgb,#000 calc(var(--t) * 100%),var(--paper))}   /* turns orange as the page goes black */
+.drop .btn:hover{background:#F3F2EE;color:#000}
 .drop{opacity:calc(1 - var(--x,0));transform:translateY(calc(var(--x,0) * -24px))}
 .outro.mapped .drop{pointer-events:none;visibility:hidden}
 /* map finale */
@@ -364,7 +366,7 @@ footer a:focus-visible{outline-color:#FF5514}
   <section class="quote">
     <figure class="wrap" style="margin:0 auto">
       <blockquote><p style="margin:0">“Becoming a person of place makes long-term investments desirable.”</p></blockquote>
-      <figcaption>Spencer R. Scott</figcaption>
+      <figcaption><a href="https://substack.com/@spencerrscott" target="_blank" rel="noopener"><img src="img/spencer-r-scott.jpg" alt="" width="176" height="176"><span>Spencer R. Scott</span></a></figcaption>
     </figure>
   </section>
 

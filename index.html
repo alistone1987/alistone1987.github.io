@@ -236,10 +236,13 @@ footer a:focus-visible{outline-color:#FF5514}
 }
 /* ---------- loading screen: black pane + a drop of slowly drifting colour (lava-lamp style) ---------- */
 html.loading{overflow:hidden}
-.loader{position:fixed;inset:0;z-index:9999;background:#000;display:grid;place-items:center;clip-path:inset(0 0 0 0)}
+.loader{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;clip-path:inset(0 0 0 0)}
 .loader.go{clip-path:inset(0 0 100% 0);transition:clip-path 1.05s cubic-bezier(.76,0,.24,1)}   /* the pane peels away from the bottom */
 .loader-drop{width:clamp(84px,14vw,150px);aspect-ratio:22/28;position:relative;filter:url(#pearl) drop-shadow(0 0 24px rgba(120,90,255,.22));transition:opacity .6s ease,transform .9s cubic-bezier(.22,1,.36,1)}
 .loader.go .loader-drop{opacity:0;transform:scale(.94)}
+.loader-text{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#A3A19B;transition:opacity .5s ease;animation:loadpulse 2.4s ease-in-out infinite}
+.loader.go .loader-text{opacity:0;animation:none}
+@keyframes loadpulse{0%,100%{opacity:.55}50%{opacity:1}}
 .loader-art{position:absolute;inset:0;overflow:hidden;background:#07282c;
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Cpath d='M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
           mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Cpath d='M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'/%3E%3C/svg%3E") center/100% 100% no-repeat}
@@ -263,7 +266,7 @@ html.loading{overflow:hidden}
     linear-gradient(112deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.05) 30%,rgba(255,255,255,0) 46%)}
 .loader-art::after{z-index:1;content:"";position:absolute;inset:0;background:radial-gradient(ellipse 38% 32% at 50% 64%,rgba(6,34,38,.94) 0%,rgba(8,44,48,.8) 40%,rgba(8,44,48,0) 100%);animation:breathe 6s ease-in-out infinite alternate}
 @keyframes breathe{from{transform:scale(1)}to{transform:scale(1.12)}}
-@media (prefers-reduced-motion:reduce){.loader-art i,.loader-art::after{animation:none}.loader.go{transition-duration:.4s}.loader-drop{transition-duration:.2s}}
+@media (prefers-reduced-motion:reduce){.loader-text{animation:none}.loader-art i,.loader-art::after{animation:none}.loader.go{transition-duration:.4s}.loader-drop{transition-duration:.2s}}
 </style>
 </head>
 <body>
@@ -299,7 +302,7 @@ html.loading{overflow:hidden}
     <feComposite in="withRim" in2="gloss" operator="arithmetic" k1="0" k2="1" k3=".25" k4="0"/>
   </filter>
 </defs></svg>
-<div class="loader" id="loader" aria-hidden="true"><div class="loader-drop"><div class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></div></div></div>
+<div class="loader" id="loader" role="status" aria-live="polite"><div class="loader-drop" aria-hidden="true"><div class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></div></div><p class="loader-text">Loading latest drops</p></div>
 <script>
 /* Loading screen: shows while the page loads (at least MIN_MS so the colours get to drift, never longer than 10s),
    then the drop fades and the black pane peels away from the bottom. */

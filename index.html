@@ -497,7 +497,7 @@ footer a:focus-visible{outline-color:#FF5514}
   // Drift: screen-heights per second for a speed-1 drop. Starts gentle and builds as you go deeper.
   function drift(r){ return 0.12 + 0.28 * r; }
   // Scrolling adds a little push on top, capped and smoothed (eases in fast, eases out slowly), so it never races.
-  var SCROLL_K = 1.1, IDLE_DRIFT = 0.025;
+  var SCROLL_K = 1.1, IDLE_DRIFT = 0.025, FOLLOW = 0.45;
   var BOOST_MAX = 0.45, BOOST_GAIN = 1.6, ATTACK = 0.22, RELEASE = 0.7, boost = 0;
   // Rain only begins once the background has fully turned black (fade ends at 0.3).
   // Timeline through the section: fade to black 0–0.22, rain builds 0.24–0.70, clears 0.70–0.78, map 0.76–0.86, pins land from 0.86.
@@ -722,7 +722,7 @@ footer a:focus-visible{outline-color:#FF5514}
   function frame(t){
     var dt = prevT ? Math.min(0.05, (t - prevT) / 1000) : 0; prevT = t;
     var before = shown;
-    shown += (target - shown) * 0.14;                           // eased follow of the scroll position
+    shown += (target - shown) * (1 - Math.exp(-dt / FOLLOW));   // eased follow of the scroll position: a bigger FOLLOW (seconds) means more inertia
     if (Math.abs(target - shown) < 0.0004) shown = target;
     var r = rainOf(shown), dD = 0;
     if (dt > 0){

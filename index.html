@@ -122,9 +122,11 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .prose .prose-cta{margin-top:clamp(28px,3vw,40px)}
 .prose .btn.ghost{text-decoration:none}
 .prose a{text-decoration-color:var(--park);text-decoration-thickness:2px;text-underline-offset:3px}
+:root[data-theme="dark"] .prose a{text-decoration-color:#FF5514}   /* orange link underlines on dark */
 
 .steps{--rev-bg:#232323;--rev-ink:#F3F2EE;--rev-soft:#BDBBB5;--rev-line:#45443F;--rev-accent:#FF5514;background:var(--rev-bg);color:var(--rev-ink)}
 .steps a:focus-visible{outline-color:var(--rev-accent)}
+.steps a{text-decoration-color:var(--rev-accent);text-decoration-thickness:2px;text-underline-offset:3px}
 .steps ol{list-style:none;margin:clamp(32px,5vw,64px) 0 0;padding:0;display:grid;grid-template-columns:1fr;gap:0}
 @media (min-width:700px){.steps ol{grid-template-columns:1fr 1fr}}
 @media (min-width:1100px){.steps ol{grid-template-columns:repeat(3,1fr)}}
@@ -212,7 +214,7 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 @media (max-width:720px){.pins{--pw:18px} .pin .label{font-size:12px;padding:6px 8px} .map-box{bottom:92px}}
 
 footer{background:#000;border-top:1px solid #2A2A2A;padding:28px var(--gutter) 36px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;font-size:16px;color:#A3A19B}
-footer a{color:#F3F2EE;text-underline-offset:3px}
+footer a{color:#F3F2EE;text-underline-offset:3px;text-decoration-color:#FF5514;text-decoration-thickness:2px}
 footer a:focus-visible{outline-color:#FF5514}
 
 @media (prefers-reduced-motion:reduce){
@@ -330,7 +332,8 @@ footer a:focus-visible{outline-color:#FF5514}
     <h2>Love Leam</h2>
     <div class="prose">
       <p>Leamington has a vibrant community that loves nothing more than to drink, eat and be merry. It often tops the lists of the <a href="https://www.coventrytelegraph.net/lifestyle/warwickshire-town-named-best-place-26539496">best places to live in the Midlands</a>, and even won the award for the happiest place to live in the UK in 2017.</p>
-      <p>The hospitality sector has taken a real hit recently, first Brexit, then lockdown and now the cost of living crisis. Despite this Leamington is blooming (much like its finest park, Jephson Gardens), and a superb foodie scene has started to grow.</p>
+      <p>The hospitality sector has taken a real hit recently, first Brexit, then lockdown, the cost of living crisis and now the crazy rate increases and lack of support from the government.</p>
+      <p>Despite this Leamington is blooming (much like its finest park, Jephson Gardens), and a superb foodie scene has started to grow.</p>
       <p class="prose-cta"><a class="btn ghost" href="https://www.instagram.com/leamingtondrop/"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".6" fill="currentColor"/></svg>Follow our Instagram</a></p>
     </div>
   </section>

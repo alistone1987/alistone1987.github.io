@@ -107,6 +107,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .reel:focus-visible{outline:3px solid var(--park);outline-offset:4px}
 .reel ul{display:flex;gap:16px;list-style:none;margin:0;padding:0;width:max-content;will-change:transform}
 .reel img{-webkit-user-drag:none;pointer-events:none}
+/* Photos load into placeholder boxes and fade in, so they never pop in. The box keeps its square size (width/height attributes + aspect-ratio). */
+.reel li{background:var(--chip);border-radius:10px;overflow:hidden}
+.reel li img{opacity:0;transition:opacity .8s cubic-bezier(.22,1,.36,1) var(--d,0s)}
+.reel li img.in{opacity:1}
+@media (prefers-reduced-motion:reduce){.reel li img{transition:none}}
 .reel li img{height:clamp(260px,36vw,460px);width:auto;aspect-ratio:1/1;object-fit:cover;border-radius:10px}
 @keyframes slide{to{transform:translateX(calc(-50% - 8px))}}
 .reel-note{margin-top:14px;font-size:15px;color:var(--soft)}
@@ -326,6 +331,24 @@ footer a:focus-visible{outline-color:#FF5514}
     var img = c.querySelector('img'); if (img) img.alt = '';
     ul.appendChild(c);
   });
+})();
+</script>
+<noscript><style>.reel li img{opacity:1}</style></noscript>
+<script>
+/* Fade each reel photo in once it has loaded (and decoded), with a short stagger across the first few. */
+(function(){
+  var imgs = Array.prototype.slice.call(document.querySelectorAll('.reel li img'));
+  function show(img, i){
+    var go = function(){ img.style.setProperty('--d', (Math.min(i, 6) * 0.08) + 's'); requestAnimationFrame(function(){ img.classList.add('in'); }); };
+    if (img.decode) img.decode().then(go, go); else go();
+  }
+  function watch(img, i){
+    img.classList.remove('in');
+    if (img.complete && img.naturalWidth) show(img, i);
+    else { img.addEventListener('load', function(){ show(img, i); }, { once: true }); img.addEventListener('error', function(){ img.classList.add('in'); }, { once: true }); }
+  }
+  imgs.forEach(watch);
+  window.reelFade = watch;       // used when the live Instagram photos replace these
 })();
 </script>
   <p class="wrap reel-note">More drops on <a href="https://www.instagram.com/leamingtondrop/">@leamingtondrop</a></p>
@@ -856,7 +879,7 @@ footer a:focus-visible{outline-color:#FF5514}
     var imgs = document.querySelectorAll('.reel img');
     imgs.forEach(function(img, i){
       var p = posts[i % posts.length], clone = img.closest('li').hasAttribute('aria-hidden');
-      img.src = p.src; img.alt = clone ? '' : p.alt;
+      img.classList.remove('in'); img.src = p.src; img.alt = clone ? '' : p.alt; if (window.reelFade) window.reelFade(img, i);
       if (p.link) img.closest('li').setAttribute('data-href', p.link);   // each photo opens its own post
     });
   }).catch(function(){});

@@ -213,6 +213,15 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .pin .tear{position:absolute;width:var(--pw);height:calc(var(--pw) * 1.27);left:calc(var(--pw) / -2);top:calc(var(--pw) * -1.27);transform-origin:50% 50%;fill:#FF5514;opacity:0}
 .pin .ring{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;border:2px solid #FF5514;opacity:0}
 .pin .label{position:absolute;top:calc(var(--pw) * -1.27 - 6px);white-space:nowrap;background:#F3F2EE;color:#000;font-weight:600;font-size:14px;line-height:1;padding:7px 10px;border-radius:999px;opacity:0;transform-origin:left bottom}
+.pin .label a{color:inherit;text-decoration:none;pointer-events:auto}
+.pin .label .st{display:inline-block;vertical-align:bottom;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;color:#FF5514;letter-spacing:1px;font-size:.85em;transition:max-width .25s ease,opacity .2s ease,margin .25s ease}
+.pin .label:hover .st,.pin .label:focus-within .st{max-width:6em;opacity:1;margin-left:7px}
+.pin .label,.pin .label a{cursor:pointer}
+.pin .label{pointer-events:auto;transition:scale .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s ease}
+.pin{transition:opacity .25s ease}
+.pin:hover{z-index:20}
+.pin:hover .label{scale:1.3;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.pins:has(.pin:hover) .pin:not(:hover){opacity:.8}
 .pin .label.r{left:calc(var(--pw) / 2 + 6px)}
 .pin .label.l{right:calc(var(--pw) / 2 + 6px);transform-origin:right bottom}
 .pins{--pw:24px}
@@ -742,7 +751,8 @@ html.loading{overflow:hidden}
 
   /* ---- Pins: a few last drips fall onto the map, turn point-down into markers, and the venue name pops up.
      Each time the map appears it picks a fresh set from the pool; "Drop more" adds more, spaced so labels don't collide. ---- */
-  var POOL = [{"name": "Ayla Grill & Restaurant", "x": 612.0, "y": 789.0}, {"name": "Baserri", "x": 561.4, "y": 284.8}, {"name": "Bebas", "x": 373.7, "y": 237.1}, {"name": "Bedford Street Bar", "x": 394.4, "y": 280.8}, {"name": "Been Chinese Restaurant", "x": 519.7, "y": 526.2}, {"name": "Bombay", "x": 364.1, "y": 388.3}, {"name": "Clink", "x": 351.8, "y": 258.7}, {"name": "Compa' Italian Restaurant", "x": 545.9, "y": 744.1}, {"name": "Cricketers Arms", "x": 177.0, "y": 612.4}, {"name": "Desai's Indian Street Food", "x": 604.7, "y": 346.3}, {"name": "Dwarakamai", "x": 369.9, "y": 459.0}, {"name": "Eleven", "x": 649.5, "y": 813.7}, {"name": "Elma", "x": 341.5, "y": 410.7}, {"name": "Fifteen", "x": 561.8, "y": 739.1}, {"name": "Five Rivers", "x": 577.9, "y": 727.0}, {"name": "Fizzy Moon", "x": 357.0, "y": 372.9}, {"name": "Fox & Vivian", "x": 557.3, "y": 103.2}, {"name": "Grace & Vine", "x": 498.0, "y": 132.6}, {"name": "Greek Zante Street", "x": 618.5, "y": 804.3}, {"name": "Guapa", "x": 677.4, "y": 878.9}, {"name": "Hayashi", "x": 643.7, "y": 210.3}, {"name": "Herb", "x": 415.9, "y": 113.5}, {"name": "Himalayan Restaurant & Bar", "x": 614.5, "y": 845.9}, {"name": "Jephson's Brasserie", "x": 691.4, "y": 606.0}, {"name": "Katoi", "x": 390.8, "y": 215.4}, {"name": "Kayal", "x": 369.7, "y": 388.3}, {"name": "Kelseys", "x": 585.9, "y": 878.8}, {"name": "La Coppola", "x": 434.8, "y": 146.9}, {"name": "Leif tearooms and piano bar", "x": 603.7, "y": 232.1}, {"name": "Leru", "x": 324.8, "y": 376.3}, {"name": "Millenium Balti", "x": 637.8, "y": 847.3}, {"name": "Murphy's Bar", "x": 336.9, "y": 375.9}, {"name": "Nana's", "x": 331.1, "y": 376.2}, {"name": "Natsuya", "x": 462.3, "y": 393.9}, {"name": "Neon Place", "x": 566.9, "y": 757.8}, {"name": "No 75", "x": 434.7, "y": 467.2}, {"name": "Oscar's", "x": 567.1, "y": 210.2}, {"name": "Otto Kitchen", "x": 362.9, "y": 373.3}, {"name": "Paprika Club", "x": 316.9, "y": 390.2}, {"name": "Pig & Fiddle", "x": 712.5, "y": 876.1}, {"name": "QR Cook", "x": 366.0, "y": 219.6}, {"name": "Raro", "x": 634.7, "y": 841.8}, {"name": "Rudy's", "x": 465.1, "y": 411.7}, {"name": "Rustiq", "x": 396.6, "y": 255.7}, {"name": "Sabai Sabai", "x": 380.3, "y": 371.9}, {"name": "Sizzlers", "x": 588.1, "y": 762.3}, {"name": "TJ's Bar & Bistro", "x": 641.1, "y": 856.3}, {"name": "Tartine", "x": 336.9, "y": 390.6}, {"name": "Taverna Meraki", "x": 512.2, "y": 357.5}, {"name": "Tavola", "x": 662.2, "y": 234.0}, {"name": "Thai Elephant", "x": 291.1, "y": 389.1}, {"name": "The Benjamin Satchwell", "x": 465.8, "y": 420.8}, {"name": "The Boiler Room", "x": 571.6, "y": 692.7}, {"name": "The Builders Arms", "x": 717.7, "y": 160.7}, {"name": "The Clarendon", "x": 590.2, "y": 101.6}, {"name": "The Copper Pot", "x": 381.3, "y": 237.1}, {"name": "The Drawing Board", "x": 671.4, "y": 446.8}, {"name": "The Greyhound", "x": 738.0, "y": 130.2}, {"name": "The Hope Tavern", "x": 702.8, "y": 891.7}, {"name": "The House", "x": 470.1, "y": 465.7}, {"name": "The Neighbourhood", "x": 374.8, "y": 257.1}, {"name": "The Old Library", "x": 603.3, "y": 753.3}, {"name": "The Railway Inn", "x": 645.7, "y": 916.6}, {"name": "The Royal Pug", "x": 616.1, "y": 343.2}, {"name": "The Ruby", "x": 576.3, "y": 288.3}, {"name": "The Star and Garter", "x": 144.6, "y": 258.1}, {"name": "The Town House", "x": 714.7, "y": 745.6}, {"name": "The White Horse", "x": 341.7, "y": 121.2}, {"name": "The Woodland Tavern", "x": 155.6, "y": 374.7}, {"name": "Tratoria", "x": 398.3, "y": 368.6}, {"name": "Villa Capri", "x": 602.1, "y": 386.8}, {"name": "Wildes", "x": 456.0, "y": 137.0}, {"name": "Wofon", "x": 573.1, "y": 425.7}, {"name": "Yum Yum", "x": 551.7, "y": 741.7}], VW = 816, VH = 1000, COUNT = 10, MORE = 5;
+  var POOL = [{"name": "Grace & Vine", "x": 498.0, "y": 132.6, "r": 5}, {"name": "Brasseri", "x": 561.4, "y": 284.8, "r": 5}, {"name": "Frankies", "x": 420, "y": 300, "r": 5}, {"name": "Red Hot Mamma", "x": 330, "y": 300, "r": 5}, {"name": "The Drawing Board", "x": 671.4, "y": 446.8, "r": 5}, {"name": "A Good Catch", "x": 450, "y": 200, "r": 5}, {"name": "Trof", "x": 380, "y": 330, "r": 4}, {"name": "Gourmet Food Kitchen", "x": 520, "y": 420, "r": 4}, {"name": "Nanas", "x": 331.1, "y": 376.2, "r": 4}, {"name": "Grounded Kitchen", "x": 300, "y": 330, "r": 4}, {"name": "The White Horse", "x": 341.7, "y": 121.2, "r": 4}, {"name": "Rosa's Thai", "x": 400, "y": 440, "r": 4}, {"name": "Royal Pug", "x": 616.1, "y": 343.2, "r": 4}, {"name": "Plan Burrito", "x": 350, "y": 440, "r": 4}, {"name": "Yum Yum Kitchen", "x": 551.7, "y": 741.7, "r": 4}, {"name": "Star and Garter", "x": 144.6, "y": 258.1, "r": 4}, {"name": "Hayashi", "x": 643.7, "y": 210.3, "r": 4}, {"name": "Bebas", "x": 373.7, "y": 237.1, "r": 4}, {"name": "Natsuya", "x": 462.3, "y": 393.9, "r": 4}, {"name": "The Boiler Room", "x": 571.6, "y": 692.7, "r": 4}, {"name": "Fat Pug", "x": 440, "y": 260, "r": 4}, {"name": "Rudi's", "x": 465.1, "y": 411.7, "r": 4}, {"name": "Wildes", "x": 456.0, "y": 137.0, "r": 4}, {"name": "Fox and Vivian", "x": 557.3, "y": 103.2, "r": 4}, {"name": "Libertine Burger", "x": 320, "y": 260, "r": 4}, {"name": "Sobe Burger", "x": 480, "y": 340, "r": 3}, {"name": "Wingers", "x": 410, "y": 395, "r": 3}, {"name": "Banh Mi Ca Phe", "x": 360, "y": 300, "r": 3}], VW = 816, VH = 1000, COUNT = 10, MORE = 5;
+  fetch('venues.json',{cache:'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){ if (d && d.length) POOL = d; }).catch(function(){});   // venues.json is the source of truth; the list above is a fallback. Edit it with tools/venues.html
   var pinLayer = outro.querySelector('.pins'), box = outro.querySelector('.map-box'), moreBtn = outro.querySelector('.drop-more');
   var TEAR = '<svg class="tear" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z"/></svg>';
   var pinEls = [], chosen = [], recent = [], landed = false, anims = [];
@@ -763,8 +773,12 @@ html.loading{overflow:hidden}
   function pick(n, already){
     // shuffle, skip ones already on the map, prefer ones not shown last time, keep them apart so labels have room
     var taken = already.map(function(p){ return p.name; });
-    var list = POOL.filter(function(p){ return taken.indexOf(p.name) < 0; }).sort(function(){ return Math.random() - 0.5; });
-    list.sort(function(p, q){ return (recent.indexOf(p.name) >= 0) - (recent.indexOf(q.name) >= 0); });
+    // priority venues ("pri") jump the queue about 80% of the time; everyone else is shuffled, preferring ones not shown last time
+    var list = POOL.filter(function(p){ return taken.indexOf(p.name) < 0; }).map(function(p){
+      var k = Math.random() + (recent.indexOf(p.name) >= 0 ? 0.5 : 0);
+      if (p.pri && Math.random() < 0.8) k -= 10;
+      return { p: p, k: k };
+    }).sort(function(a, b){ return a.k - b.k; }).map(function(o){ return o.p; });
     var out = [], all = already.slice();
     for (var i = 0; i < list.length && out.length < n; i++){
       if (!clashes(list[i], all)){ out.push(list[i]); all.push(list[i]); }
@@ -779,7 +793,8 @@ html.loading{overflow:hidden}
       el.style.display = p ? '' : 'none'; if (!p) return;
       var x = ox + p.x * sc, y = oy + p.y * sc;
       el.style.left = x + 'px'; el.style.top = y + 'px'; el.dataset.y = y;
-      var lab = el.querySelector('.label'); lab.textContent = p.name;
+      var lab = el.querySelector('.label'); lab.textContent = ''; var a = document.createElement('a'); a.href = p.url || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ' Leamington Spa'); a.target = '_blank'; a.rel = 'noopener'; a.textContent = p.name; lab.appendChild(a);
+      var st = document.createElement('span'); st.className = 'st'; st.setAttribute('aria-label', p.r + ' out of 5 stars'); st.textContent = '\u2605'.repeat(p.r); lab.appendChild(st);
       var w = lab.offsetWidth || 160, side = p.x < VW / 2 ? 'r' : 'l';
       if (side === 'r' && x + w + 24 > s0.width) side = 'l';
       if (side === 'l' && x - w - 24 < 0) side = 'r';

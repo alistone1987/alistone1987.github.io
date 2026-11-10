@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Venues CMS</title>
+<style>
+:root{--o:#FF5514;--bg:#fff;--fg:#111;--mut:#777;--line:#e5e5e5;--chip:#f4f4f2}
+@media (prefers-color-scheme:dark){:root{--bg:#111;--fg:#f3f2ee;--mut:#999;--line:#2a2a2a;--chip:#1c1c1c}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+header h1{font-size:16px;margin:0 auto 0 0}
+button{font:inherit;border:0;border-radius:8px;padding:8px 12px;background:var(--chip);color:var(--fg);cursor:pointer}
+button.p{background:var(--o);color:#000;font-weight:600}
+main{display:grid;grid-template-columns:minmax(320px,1fr) minmax(320px,460px);gap:20px;padding:20px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);min-width:0}
+.add{display:grid;grid-template-columns:1fr 130px;gap:8px;margin-bottom:8px}
+.add input.u{grid-column:1/-1}.add .row{grid-column:1/-1;display:flex;gap:8px;align-items:center;color:var(--mut)}
+table{width:100%;border-collapse:collapse;margin-top:14px}
+td,th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;font-weight:400}
+th{color:var(--mut);font-size:12px}
+td input{width:100%}td.n{width:34%}td.r{width:150px;white-space:nowrap}.stars{margin-left:6px;font-size:12px}td.c{width:130px}td.x{width:30px}
+tr.sel td{background:color-mix(in srgb,var(--o) 14%,transparent)}
+.mapw{position:sticky;top:70px;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:816/1000}
+.mapw svg{width:100%;height:100%;display:block;cursor:crosshair}
+.mapw path{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.m-park{fill:#1A1A1A!important;stroke:none}.m-river{stroke:#5C5C5C;stroke-width:3.5px}.m-local{stroke:#fff;stroke-opacity:.32;stroke-width:.8px}
+.m-rail{stroke:#fff;stroke-opacity:.35;stroke-dasharray:4 4}.m-minor{stroke:#fff;stroke-opacity:.6;stroke-width:1.3px}.m-major{stroke:#fff;stroke-opacity:.9;stroke-width:2.2px}
+.dot{fill:var(--o);stroke:#000;stroke-width:1}.dot.sel{fill:#fff;stroke:var(--o);stroke-width:3}
+.dot.hov{fill:#fff;stroke:var(--o);stroke-width:3}
+.dotl{fill:#fff;font-size:11px;paint-order:stroke;stroke:#000;stroke-width:3px;pointer-events:none}
+.hint{color:var(--mut);margin:6px 0 0;font-size:12px}
+#st{color:var(--mut);font-size:12px}
+</style></head><body>
+<header><h1>Venues CMS</h1><span id="st"></span>
+<button id="open">Open venues.json</button><button id="save" class="p">Save</button><button id="dl">Download</button></header>
+<main>
+<section>
+ <div class="add"><input id="nn" placeholder="Venue name"><select id="nr"><option value="5">5 ⭐⭐⭐⭐⭐</option><option value="4">4 ⭐⭐⭐⭐</option><option value="3">3 ⭐⭐⭐</option><option value="2">2 ⭐⭐</option><option value="1">1 ⭐</option></select>
+ <select id="np" class="u"><option value="0">Normal order</option><option value="1">Priority: shown ~80% of the time</option></select>
+ <input class="u" id="nu" placeholder="Google Maps link (optional, otherwise a search for the name is used)">
+ <div class="row"><button class="p" id="add">Add venue</button><span>then click the map to place it</span></div></div>
+ <p class="hint">Click a row to select it, then click the map to move its pin. Changes are only live once saved into <code>venues.json</code> and pushed.</p>
+ <table><thead><tr><th>Name</th><th>Stars</th><th>Priority</th><th>Link</th><th></th></tr></thead><tbody id="tb"></tbody></table>
+</section>
+<section><div class="mapw" id="map"></div></section>
+</main>
+<script>
+var V=[],sel=-1,hov=-1,handle=null,svg=null,NS='http://www.w3.org/2000/svg';
+var $=function(i){return document.getElementById(i)};
+function status(t){$('st').textContent=t}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function render(){
+ $('tb').innerHTML=V.map(function(v,i){return '<tr data-i="'+i+'"'+(i===sel?' class="sel"':'')+'><td class="n"><input data-f="name" value="'+esc(v.name)+'"></td><td class="r"><select data-f="r">'+[5,4,3,2,1].map(function(n){return '<option'+(n==v.r?' selected':'')+'>'+n+'</option>'}).join('')+'</select><span class="stars">'+'⭐'.repeat(v.r)+'</span></td><td class="c"><select data-f="pri"><option value="0">Normal</option><option value="1"'+(v.pri?' selected':'')+'>Priority (~80%)</option></select></td><td><input data-f="url" placeholder="auto" value="'+esc(v.url||'')+'"></td><td class="x"><button data-del="1" title="Delete">×</button></td></tr>'}).join('');
+ dots();
+}
+function dots(){
+ if(!svg)return; svg.querySelectorAll('.pinlayer').forEach(function(n){n.remove()});
+ var g=document.createElementNS(NS,'g');g.setAttribute('class','pinlayer');
+ V.forEach(function(v,i){var c=document.createElementNS(NS,'circle');c.setAttribute('cx',v.x);c.setAttribute('cy',v.y);c.setAttribute('r',i===sel||i===hov?9:6);c.setAttribute('class','dot'+(i===sel?' sel':'')+(i===hov?' hov':''));c.dataset.i=i;g.appendChild(c);
+  if(i===sel||i===hov){var t=document.createElementNS(NS,'text');t.setAttribute('x',v.x+12);t.setAttribute('y',v.y+4);t.setAttribute('class','dotl');t.textContent=v.name;g.appendChild(t)}});
+ svg.appendChild(g);
+}
+$('tb').addEventListener('input',function(e){var tr=e.target.closest('tr'),i=+tr.dataset.i,f=e.target.dataset.f;V[i][f]=f==='r'||f==='pri'?+e.target.value:e.target.value;if(f==='pri'&&!V[i].pri)delete V[i].pri;if(f==='r')tr.querySelector('.stars').textContent='⭐'.repeat(V[i].r);if(f==='url'&&!e.target.value)delete V[i].url;if(f==='name')dots()});
+$('tb').addEventListener('mouseover',function(e){var tr=e.target.closest('tr');var i=tr?+tr.dataset.i:-1;if(i!==hov){hov=i;dots()}});
+$('tb').addEventListener('mouseleave',function(){hov=-1;dots()});
+$('tb').addEventListener('click',function(e){var tr=e.target.closest('tr');if(!tr)return;var i=+tr.dataset.i;
+ if(e.target.dataset.del){if(confirm('Delete '+V[i].name+'?')){V.splice(i,1);sel=-1;render()}return}
+ if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){if(sel!==i){sel=i;document.querySelectorAll('#tb tr').forEach(function(r){r.classList.toggle('sel',+r.dataset.i===i)});dots()}return}
+ sel=i;render()});
+$('add').onclick=function(){var n=$('nn').value.trim();if(!n)return $('nn').focus();var v={name:n,x:408,y:500,r:+$('nr').value};if($('np').value==='1')v.pri=1;if($('nu').value.trim())v.url=$('nu').value.trim();V.push(v);sel=V.length-1;$('nn').value='';$('nu').value='';render();status('Click the map to place '+n);document.querySelector('#tb tr:last-child').scrollIntoView({block:'nearest'})};
+$('nn').addEventListener('keydown',function(e){if(e.key==='Enter')$('add').click()});
+function json(){return '[\n'+V.map(function(v){var o={name:v.name,x:Math.round(v.x*10)/10,y:Math.round(v.y*10)/10,r:v.r};if(v.pri)o.pri=1;if(v.url)o.url=v.url;return ' '+JSON.stringify(o)}).join(',\n')+'\n]\n'}
+$('open').onclick=async function(){
+ if(!window.showOpenFilePicker)return status('Your browser can\'t edit files in place: use Download, then replace venues.json in the repo.');
+ try{var h=await showOpenFilePicker({types:[{accept:{'application/json':['.json']}}]});handle=h[0];V=JSON.parse(await(await handle.getFile()).text());sel=-1;render();status('Editing '+handle.name+' in place')}catch(e){}};
+$('save').onclick=async function(){
+ if(!handle&&window.showSaveFilePicker){try{handle=await showSaveFilePicker({suggestedName:'venues.json',types:[{accept:{'application/json':['.json']}}]})}catch(e){return}}
+ if(!handle)return $('dl').click();
+ var w=await handle.createWritable();await w.write(json());await w.close();status('Saved '+V.length+' venues to '+handle.name+' at '+new Date().toLocaleTimeString()+' — now commit and push')};
+$('dl').onclick=function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json()],{type:'application/json'}));a.download='venues.json';a.click()};
+Promise.all([fetch('../venues.json',{cache:'no-cache'}).then(function(r){return r.json()}),fetch('../index.html').then(function(r){return r.text()})]).then(function(r){
+ V=r[0];var m=r[1].match(/<svg class="map-svg"[\s\S]*?<\/svg>/);
+ var d=new DOMParser().parseFromString(m[0].replace('<svg ','<svg xmlns="'+NS+'" '),'image/svg+xml').documentElement;
+ d.removeAttribute('class');d.removeAttribute('aria-hidden');$('map').appendChild(d);svg=d;
+ svg.addEventListener('click',function(e){
+  var p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;var q=p.matrixTransform(svg.getScreenCTM().inverse());
+  if(e.target.classList&&e.target.classList.contains('dot')){sel=+e.target.dataset.i;return render()}
+  if(sel<0)return status('Select a venue first');V[sel].x=Math.round(q.x*10)/10;V[sel].y=Math.round(q.y*10)/10;dots();status('Moved '+V[sel].name+' (unsaved)')});
+ render();status(V.length+' venues. Open venues.json to save straight back to the file.');
+}).catch(function(){status('Serve the repo over http (e.g. localhost:8080/tools/venues.html) so it can load venues.json and the map.')});
+</script></body></html>

@@ -20,7 +20,8 @@
 :root[data-theme="dark"]{--paper:#1B1B1A;--ink:#F3F2EE;--soft:#B9B7B1;--line:#3A3936;--park:#8FC3A5;--chip:#2A2A28;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;font-variation-settings:"opsz" 14;font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;font-variation-settings:"opsz" 14;font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:clip}
+@supports not (overflow:clip){body{overflow-x:hidden}}   /* "clip" (not "hidden") so the pinned outro section can stick in Safari */
 img{max-width:100%;display:block}
 a{color:inherit}
 a:focus-visible{outline:3px solid var(--park);outline-offset:4px;border-radius:4px}

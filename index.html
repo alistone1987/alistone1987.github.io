@@ -242,10 +242,6 @@ html.loading{overflow:hidden}
 .loader.go .loader-drop{opacity:0;transform:scale(.94)}
 .loader-text{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#A3A19B;transition:opacity .5s ease}
 .loader.go .loader-text{opacity:0}
-.loader-text i{font-style:normal;animation:dot 1.3s ease-in-out infinite}
-.loader-text i:nth-child(2){animation-delay:.18s}
-.loader-text i:nth-child(3){animation-delay:.36s}
-@keyframes dot{0%,70%,100%{opacity:.2}30%{opacity:1}}
 .loader-art{position:absolute;inset:0;overflow:hidden;background:#07282c;
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Cpath d='M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
           mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Cpath d='M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'/%3E%3C/svg%3E") center/100% 100% no-repeat}
@@ -269,7 +265,7 @@ html.loading{overflow:hidden}
     linear-gradient(112deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.05) 30%,rgba(255,255,255,0) 46%)}
 .loader-art::after{z-index:1;content:"";position:absolute;inset:0;background:radial-gradient(ellipse 38% 32% at 50% 64%,rgba(6,34,38,.94) 0%,rgba(8,44,48,.8) 40%,rgba(8,44,48,0) 100%);animation:breathe 6s ease-in-out infinite alternate}
 @keyframes breathe{from{transform:scale(1)}to{transform:scale(1.12)}}
-@media (prefers-reduced-motion:reduce){.loader-text i{animation:none;opacity:1}.loader-art i,.loader-art::after{animation:none}.loader.go{transition-duration:.4s}.loader-drop{transition-duration:.2s}}
+@media (prefers-reduced-motion:reduce){.loader-art i,.loader-art::after{animation:none}.loader.go{transition-duration:.4s}.loader-drop{transition-duration:.2s}}
 </style>
 </head>
 <body>
@@ -305,7 +301,7 @@ html.loading{overflow:hidden}
     <feComposite in="withRim" in2="gloss" operator="arithmetic" k1="0" k2="1" k3=".25" k4="0"/>
   </filter>
 </defs></svg>
-<div class="loader" id="loader" role="status" aria-label="Loading"><div class="loader-drop" aria-hidden="true"><div class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></div></div><p class="loader-text" aria-hidden="true">Loading<i>.</i><i>.</i><i>.</i></p></div>
+<div class="loader" id="loader" role="status" aria-label="Loading"><div class="loader-drop" aria-hidden="true"><div class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></div></div><p class="loader-text" aria-hidden="true">Loading</p></div>
 <script>
 /* Loading screen: shows while the page loads (at least MIN_MS so the colours get to drift, never longer than 10s),
    then the drop fades and the black pane peels away from the bottom. */

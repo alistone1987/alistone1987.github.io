@@ -231,9 +231,77 @@ footer a:focus-visible{outline-color:#FF5514}
   .mmenu,.mmenu *{transition:none}
   .drop .say,.drop .btn{transition:none}
 }
+/* ---------- loading screen: black pane + a drop of slowly drifting colour (lava-lamp style) ---------- */
+html.loading{overflow:hidden}
+.loader{position:fixed;inset:0;z-index:9999;background:#000;display:grid;place-items:center;clip-path:inset(0 0 0 0)}
+.loader.go{clip-path:inset(0 0 100% 0);transition:clip-path 1.05s cubic-bezier(.76,0,.24,1)}   /* the pane peels away from the bottom */
+.loader-drop{width:clamp(84px,14vw,150px);aspect-ratio:22/28;position:relative;filter:url(#pearl) drop-shadow(0 0 24px rgba(120,90,255,.22));transition:opacity .6s ease,transform .9s cubic-bezier(.22,1,.36,1)}
+.loader.go .loader-drop{opacity:0;transform:scale(.94)}
+.loader-art{position:absolute;inset:0;overflow:hidden;background:#07282c;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Cpath d='M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Cpath d='M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'/%3E%3C/svg%3E") center/100% 100% no-repeat}
+.loader-art .field{position:absolute;inset:-20%;filter:saturate(1.9) contrast(1.15) brightness(1.04)}
+.loader-art i{position:absolute;width:72%;aspect-ratio:1;border-radius:50%;filter:blur(7px);will-change:transform;
+  background:radial-gradient(circle,var(--c) 0%,var(--c) 30%,transparent 72%)}
+.loader-art i:nth-child(1){--c:#ff2bd6;left:-18%;top:-6%;animation:lava1 9s ease-in-out infinite alternate}
+.loader-art i:nth-child(2){--c:#1fd6ee;right:-24%;top:-10%;animation:lava2 11s ease-in-out infinite alternate}
+.loader-art i:nth-child(3){--c:#2f3cff;left:6%;top:-24%;animation:lava3 13s ease-in-out infinite alternate}
+.loader-art i:nth-child(4){--c:#ffe01a;left:-26%;bottom:-8%;animation:lava2 10s ease-in-out infinite alternate-reverse}
+.loader-art i:nth-child(5){--c:#FF5514;right:-26%;bottom:-2%;animation:lava1 12s ease-in-out infinite alternate-reverse}
+.loader-art i:nth-child(6){--c:#9b4dff;left:20%;bottom:-24%;animation:lava3 8s ease-in-out infinite alternate}
+.loader-art i:nth-child(7){--c:#3fd05a;left:-10%;top:30%;animation:lava2 14s ease-in-out infinite alternate}
+@keyframes lava1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(38%,22%) scale(1.25)}100%{transform:translate(12%,48%) scale(.9)}}
+@keyframes lava2{0%{transform:translate(0,0) scale(1.1)}50%{transform:translate(-34%,30%) scale(.9)}100%{transform:translate(-8%,-26%) scale(1.3)}}
+@keyframes lava3{0%{transform:translate(0,0) scale(.95)}50%{transform:translate(28%,40%) scale(1.3)}100%{transform:translate(-30%,18%) scale(1.05)}}
+.loader-art::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;   /* glass: a crisp window-light highlight, a soft sheen and reflected light low down */
+  background:
+    radial-gradient(ellipse 17% 25% at 31% 32%,rgba(255,255,255,.62) 0%,rgba(255,255,255,.3) 45%,rgba(255,255,255,0) 100%),
+    radial-gradient(ellipse 44% 38% at 33% 36%,rgba(255,255,255,.26) 0%,rgba(255,255,255,0) 100%),
+    linear-gradient(112deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.05) 30%,rgba(255,255,255,0) 46%)}
+.loader-art::after{z-index:1;content:"";position:absolute;inset:0;background:radial-gradient(ellipse 38% 32% at 50% 64%,rgba(6,34,38,.94) 0%,rgba(8,44,48,.8) 40%,rgba(8,44,48,0) 100%);animation:breathe 6s ease-in-out infinite alternate}
+@keyframes breathe{from{transform:scale(1)}to{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.loader-art i,.loader-art::after{animation:none}.loader.go{transition-duration:.4s}.loader-drop{transition-duration:.2s}}
 </style>
 </head>
 <body>
+<noscript><style>.loader{display:none}html.loading{overflow:auto}</style></noscript>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <!-- pearlescent, glassy 3D finish for the loader drop: a soft light bevel + a pale pearly rim -->
+  <filter id="pearl" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+    <!-- a wide, soft height-map from the blurred shape makes it read as a smooth, rounded volume (more like a sphere than a bevel) -->
+    <feGaussianBlur in="SourceAlpha" stdDeviation="13" result="bump"/>
+    <feDiffuseLighting in="bump" surfaceScale="9" diffuseConstant="1" lighting-color="#ffffff" result="shade"><fePointLight x="34" y="6" z="170"/></feDiffuseLighting>
+    <feComposite in="SourceGraphic" in2="shade" operator="arithmetic" k1="1.15" k2="0.22" k3="0" k4="0" result="shaded"/>
+    <feSpecularLighting in="bump" surfaceScale="9" specularConstant=".7" specularExponent="12" lighting-color="#ffffff" result="spec"><fePointLight x="34" y="-6" z="150"/></feSpecularLighting>
+    <feComposite in="spec" in2="SourceAlpha" operator="in" result="gloss"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="soft"/>
+    <feComposite in="SourceAlpha" in2="soft" operator="arithmetic" k1="-1" k2="1" k3="0" k4="0" result="edge"/>
+    <feFlood flood-color="#ffe6f8" flood-opacity=".12"/>
+    <feComposite in2="edge" operator="in" result="rim"/>
+    <feComposite in="shaded" in2="rim" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="withRim"/>
+    <feComposite in="withRim" in2="gloss" operator="arithmetic" k1="0" k2="1" k3=".25" k4="0" result="lit"/>
+    <feGaussianBlur in="lit" stdDeviation="0.35"/>   <!-- just enough to take the jaggedness off the outline -->
+  </filter>
+</defs></svg>
+<div class="loader" id="loader" aria-hidden="true"><div class="loader-drop"><div class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></div></div></div>
+<script>
+/* Loading screen: shows while the page loads (at least MIN_MS so the colours get to drift, never longer than 10s),
+   then the drop fades and the black pane peels away from the bottom. */
+(function(){
+  var MIN_MS = 3500;       // least time the loader stays up, so the colours get to drift
+  var L = document.getElementById('loader'), root = document.documentElement, t0 = Date.now(), done = false;
+  root.classList.add('loading');
+  function finish(){
+    if (done) return; done = true;
+    L.classList.add('go');
+    setTimeout(function(){ root.classList.remove('loading'); if (L.parentNode) L.parentNode.removeChild(L); }, 1200);
+  }
+  function ready(){ setTimeout(finish, Math.max(0, MIN_MS - (Date.now() - t0))); }
+  if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready);
+  setTimeout(finish, 10000);
+})();
+</script>
+
 <nav class="bar" aria-label="Main">
   <div class="inner small-caps">
     <a class="n1" href="#top"><span class="dot"></span>Home</a>

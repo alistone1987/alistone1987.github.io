@@ -55,6 +55,16 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .logo-wrap{container-type:inline-size;padding:clamp(6px,.76vw,11px) var(--pad) clamp(10px,1.3vw,19px);overflow:hidden}
 .logo-wrap .wm{font-size:calc(100cqi / 4.26);opacity:0;animation:fadein 1.6s ease .1s forwards}
 @keyframes fadein{to{opacity:1}}
+/* crayon: over the big wordmark the cursor becomes an orange wax crayon and you can scribble on the logo area (mouse / pen, desktop only) */
+.logo-wrap{position:relative}
+.crayon-pad{position:absolute;inset:0;width:100%;height:100%;z-index:2;display:block}
+@media (hover:hover) and (pointer:fine){.logo-wrap.crayon-on,.logo-wrap.crayon-on *{cursor:none}}
+.crayon-cursor{position:fixed;left:0;top:0;z-index:300;pointer-events:none;opacity:0;transition:opacity .15s ease;will-change:transform}
+.crayon-cursor.on{opacity:1}
+.crayon-cursor svg{position:absolute;left:-2px;top:-20px;width:150px;height:40px;overflow:visible;transform-origin:2px 20px;transform:rotate(-42deg);transition:transform .15s ease;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+.crayon-cursor.down svg{transform:rotate(-36deg) scale(.98)}
+@media (max-width:720px),(hover:none){.crayon-cursor{display:none}}
+
 .band{border-top:.5px solid var(--hair);border-bottom:.5px solid var(--hair);padding:14px var(--pad);display:flex;justify-content:space-between;align-items:center;gap:32px;min-height:82px}
 .tagline{margin:0;font-size:clamp(20px,1.9vw,27px);font-weight:500;letter-spacing:-.02em;line-height:1.2;max-width:480px;font-variation-settings:"opsz" 36}
 .tagline .line,.band .intro{display:block;opacity:0;animation:fadein 1s ease forwards}
@@ -1109,6 +1119,86 @@ html.loading{overflow:hidden}
   // wait for the loading screen to leave first, otherwise the first line plays unseen behind it
   var io = new IntersectionObserver(function(es){ if (es[0].isIntersecting){ io.disconnect(); intro(); } }, { threshold: 0.9 });
   (function ready(){ if (document.getElementById('loader')) return setTimeout(ready, 150); io.observe(h); })();
+})();
+</script>
+<div class="crayon-cursor" id="crayonCursor" aria-hidden="true"><svg viewBox="0 0 150 40" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="cgW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8048"/><stop offset=".4" stop-color="#F0500F"/><stop offset="1" stop-color="#A92F05"/></linearGradient>
+<linearGradient id="cgT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFA678"/><stop offset=".5" stop-color="#FF5514"/><stop offset="1" stop-color="#C23A08"/></linearGradient>
+<filter id="cgP" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="4" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 -.12"/></filter>
+<clipPath id="cgB"><rect x="26" y="9" width="108" height="22"/></clipPath>
+</defs>
+<path d="M2.5 20.6C2.2 19.6 3 18.6 4.4 18.1L26 9V31L4.4 22C3.2 21.6 2.7 21.2 2.5 20.6Z" fill="url(#cgT)"/>
+<path d="M4 19.2L26 11" stroke="#fff" stroke-opacity=".35" stroke-width="1.2" fill="none"/>
+<rect x="26" y="9" width="108" height="22" fill="url(#cgW)"/>
+<rect x="26" y="9" width="108" height="22" filter="url(#cgP)" clip-path="url(#cgB)" opacity=".55"/>
+<rect x="26" y="10.6" width="108" height="3" rx="1.5" fill="#fff" opacity=".25"/>
+<g fill="#4F1503" opacity=".9"><rect x="31" y="9" width="5" height="22"/><rect x="39" y="9" width="2.5" height="22"/><rect x="112" y="9" width="2.5" height="22"/><rect x="118" y="9" width="5" height="22"/></g>
+<rect x="49" y="11.5" width="54" height="17" rx="8.5" fill="#4F1503" opacity=".92"/>
+<rect x="49.8" y="12.3" width="52.4" height="15.4" rx="7.7" fill="none" stroke="#FF8A5A" stroke-opacity=".7" stroke-width=".8"/>
+<rect x="134" y="10" width="5" height="20" rx="2.2" fill="#B83306"/>
+</svg></div>
+<script>
+(function(){
+  var wrap = document.querySelector('.logo-wrap'), cur = document.getElementById('crayonCursor'); if (!wrap || !cur) return;
+  if (!window.matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  var cv = document.createElement('canvas'); cv.className = 'crayon-pad'; cv.setAttribute('aria-hidden', 'true'); wrap.appendChild(cv);
+  var ctx = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2), W = 0, H = 0;
+  // paper grain: a tile of smoothed noise; wax only "catches" where the paper peaks, so strokes look speckled and fill in as you press over them again
+  var G = 256, grain = new Float32Array(G * G), tmp = new Float32Array(G * G), i, x, y;
+  for (i = 0; i < grain.length; i++) grain[i] = Math.random();
+  for (var pass = 0; pass < 2; pass++){
+    for (y = 0; y < G; y++) for (x = 0; x < G; x++){
+      var sum = 0; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) sum += grain[((y + dy + G) % G) * G + (x + dx + G) % G];
+      tmp[y * G + x] = sum / 9;
+    }
+    grain.set(tmp);
+  }
+  var lo = 1, hi = 0; for (i = 0; i < grain.length; i++){ if (grain[i] < lo) lo = grain[i]; if (grain[i] > hi) hi = grain[i]; }
+  for (i = 0; i < grain.length; i++) grain[i] = (grain[i] - lo) / (hi - lo);
+  var SHADES = ['#FF5514', '#F24E10', '#FF6428', '#E8470C'];
+  function size(){
+    var w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h || (w === W && h === H)) return;
+    var old = null; if (W && H){ old = document.createElement('canvas'); old.width = cv.width; old.height = cv.height; old.getContext('2d').drawImage(cv, 0, 0); }
+    W = w; H = h; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    if (old) ctx.drawImage(old, 0, 0, cv.width, cv.height);
+  }
+  size(); if (window.ResizeObserver) new ResizeObserver(size).observe(wrap); else window.addEventListener('resize', size);
+  function radius(){ return Math.max(6, Math.min(14, W / 150)); }
+  function dab(px, py, R){
+    // one stamp of wax: a faint waxy body plus lots of grainy specks inside the brush circle
+    ctx.globalAlpha = 0.10; ctx.fillStyle = '#FF5514'; ctx.beginPath(); ctx.arc(px * dpr, py * dpr, R * 0.8 * dpr, 0, 6.2832); ctx.fill();
+    for (var k = 0; k < 26; k++){
+      var a = Math.random() * 6.2832, r = R * Math.sqrt(Math.random()), x = px + Math.cos(a) * r, y = py + Math.sin(a) * r;
+      var n = grain[(((y * 1.3) | 0) & 255) * G + (((x * 1.3) | 0) & 255)];
+      if (n * 0.8 + Math.random() * 0.4 < 0.52) continue;
+      ctx.globalAlpha = 0.55 + Math.random() * 0.4; ctx.fillStyle = SHADES[(Math.random() * SHADES.length) | 0];
+      var s = (0.6 + Math.random() * 1.3) * dpr; ctx.fillRect(x * dpr - s / 2, y * dpr - s / 2, s, s * (0.7 + Math.random() * 0.8));
+    }
+    ctx.globalAlpha = 1;
+  }
+  var last = null, down = false;
+  function local(e){ var b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
+  function stroke(from, to){
+    var R = radius(), dx = to[0] - from[0], dy = to[1] - from[1], d = Math.hypot(dx, dy), step = Math.max(1.2, R * 0.3), n = Math.max(1, Math.ceil(d / step));
+    for (var k = 1; k <= n; k++) dab(from[0] + dx * k / n, from[1] + dy * k / n, R);
+  }
+  function place(e){ cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'; }
+  cv.addEventListener('pointerenter', function(e){ if (e.pointerType === 'touch') return; place(e); cur.classList.add('on'); wrap.classList.add('crayon-on'); });
+  cv.addEventListener('pointerleave', function(){ if (down) return; cur.classList.remove('on'); wrap.classList.remove('crayon-on'); });
+  cv.addEventListener('pointerdown', function(e){
+    if (e.pointerType === 'touch' || e.button !== 0) return;
+    down = true; cv.setPointerCapture(e.pointerId); cur.classList.add('down'); last = local(e); dab(last[0], last[1], radius()); place(e); e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function(e){
+    if (e.pointerType === 'touch') return; place(e); cur.classList.add('on'); wrap.classList.add('crayon-on');
+    if (!down) return;
+    var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; if (!evs.length) evs = [e];
+    evs.forEach(function(ev){ var p = local(ev); stroke(last, p); last = p; });
+  });
+  function up(e){ if (!down) return; down = false; cur.classList.remove('down'); try { cv.releasePointerCapture(e.pointerId); } catch (_) {} var b = cv.getBoundingClientRect(); if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom){ cur.classList.remove('on'); wrap.classList.remove('crayon-on'); } }
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  window.addEventListener('scroll', function(){ if (!down && cur.classList.contains('on')){ var b = cv.getBoundingClientRect(), y = parseFloat(cur.style.transform.split(',')[1]) || 0; if (y < b.top || y > b.bottom){ cur.classList.remove('on'); wrap.classList.remove('crayon-on'); } } }, { passive: true });
 })();
 </script>
 </body>

@@ -15,10 +15,12 @@ html,body{margin:0}
 body{background:var(--chip);color:var(--ink);font-family:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
 .app{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:100vh}
 .stage{padding:28px;display:flex;flex-direction:column;gap:14px;position:sticky;top:0;height:100vh}
-.preview{flex:1;min-height:0;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:
+.preview{flex:1;min-height:0;position:relative;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:
   conic-gradient(#e9e7e2 25%,#fff 0 50%,#e9e7e2 0 75%,#fff 0) 0 0/24px 24px;border:1px solid var(--line)}
+.preview.post{background:#ECEBE7;border-color:transparent}
 .preview.light{background:#fff}.preview.dark{background:#1b1b1a}
-.preview img{max-width:100%;max-height:100%;display:block;box-shadow:0 10px 40px rgba(0,0,0,.12)}
+/* fitted to the box on both axes (absolutely placed so the percentages resolve), so the whole artboard is always visible and centred */
+.preview img{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;width:auto;height:auto;display:block;box-shadow:0 10px 40px rgba(0,0,0,.12)}
 .preview img.flat{box-shadow:none}
 .meta{margin:0;color:var(--soft);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .backdrop{display:flex;gap:6px;align-items:center}
@@ -68,13 +70,43 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px rgba(255,
   .preview{height:56vh;flex:none}
   .panel{border-left:0}
 }
+
+/* ---- tabs + Instagram post mode ---- */
+.tabs{position:sticky;top:0;z-index:20;height:52px;display:flex;align-items:center;gap:18px;padding:0 28px;background:var(--paper);border-bottom:1px solid var(--line)}
+.tabs .brand{font-weight:700;letter-spacing:-.02em}
+.tabs nav{display:flex;gap:4px;background:var(--chip);border-radius:999px;padding:3px}
+.tabs nav button{font:inherit;font-size:14px;border:0;background:transparent;border-radius:999px;padding:6px 16px;cursor:pointer;color:var(--soft)}
+.tabs nav button[aria-selected="true"]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.app{min-height:calc(100vh - 52px)}
+.stage{top:52px;height:calc(100vh - 52px)}
+body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none!important}
+.strip{display:flex;gap:8px;overflow-x:auto;padding:3px 2px;flex:none}
+.strip button{flex:none;border:2px solid transparent;border-radius:8px;padding:0;overflow:hidden;background:#e9e7e2;cursor:pointer;position:relative}
+.strip button[aria-pressed="true"]{border-color:var(--accent)}
+.strip img{display:block;height:84px;width:auto}
+.strip span{position:absolute;left:5px;top:4px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:999px;padding:1px 7px}
+.slide{border:1.5px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;background:var(--chip)}
+.slide.cur{border-color:var(--accent);background:#fff}
+.slide .hd{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--soft);margin-bottom:6px}
+.slide .hd b{color:var(--ink)}
+.slide .hd .sp{flex:1}
+.slide .hd button{font:inherit;font-size:12px;border:0;background:#fff;border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--soft)}
+.slide textarea{width:100%;min-height:78px;resize:vertical;font:inherit;font-size:14px;line-height:1.35;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;color:var(--ink)}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:10px}
+.pos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.pos button{font:inherit;font-size:12px;border:1.5px solid var(--line);background:var(--chip);border-radius:8px;padding:8px 4px;cursor:pointer;color:var(--soft)}
+.pos button[aria-pressed="true"]{border-color:var(--accent);background:#fff;color:var(--ink);font-weight:600}
+.tipbox{background:#fff7f2;border:1px solid #ffdcc9;border-radius:10px;padding:10px 12px;font-size:12px;color:#7a3714;margin-top:10px;line-height:1.45}
+@media(max-width:900px){.stage{top:auto;height:auto}.tabs{padding:0 16px}}
 *,*::before,*::after{corner-shape:squircle}
 </style>
 </head>
-<body>
+<body data-mode="logo">
+<header class="tabs"><span class="brand">Leamdrop tools</span><nav role="tablist" aria-label="Tool"><button type="button" role="tab" data-mode="logo" aria-selected="true">Logo</button><button type="button" role="tab" data-mode="post" aria-selected="false">Instagram post</button></nav></header>
 <div class="app">
   <div class="stage">
     <div class="preview" id="preview"><img id="prev" alt="Logo preview"></div>
+    <div class="strip post-only" id="strip" aria-label="Slides"></div>
     <p class="meta"><span id="metaText">Loading…</span>
       <span class="backdrop" id="backdrop" aria-label="Preview backdrop for transparent exports">Preview on
         <button type="button" data-b="checker" aria-pressed="true">Checker</button>
@@ -85,9 +117,86 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px rgba(255,
   </div>
 
   <aside class="panel">
-    <h1>Leamdrop logo tool</h1>
-    <p class="sub">Pick a logo, put it on any background, export it. Press <b>R</b> to randomise the pearl.</p>
+    <h1><span class="logo-only">Leamdrop logo tool</span><span class="post-only">Instagram post maker</span></h1>
+    <p class="sub logo-only">Pick a logo, put it on any background, export it. Press <b>R</b> to randomise the pearl.</p>
+    <p class="sub post-only">Make a single post or a swipeable carousel on the same backgrounds. Press <b>R</b> to randomise the pearl.</p>
     <div class="warn" id="warn">The font file couldn't be loaded (open this page from a web server rather than as a file). The preview is using a fallback, so exports won't match the real wordmark.</div>
+
+
+    <section class="post-only">
+      <h2>Post</h2>
+      <div class="seg" id="postType">
+        <button type="button" data-v="single" aria-pressed="true">Single post</button>
+        <button type="button" data-v="carousel" aria-pressed="false">Carousel</button>
+      </div>
+      <div class="row">
+        <label class="f">Format
+          <select id="postRatio">
+            <option value="4:5" selected>Portrait 4:5</option>
+            <option value="3:4">Portrait 3:4</option>
+            <option value="1:1">Square 1:1</option>
+          </select>
+        </label>
+        <label class="f">Export size
+          <select id="postSize">
+            <option value="1080" selected>1080 px (native)</option>
+            <option value="2160">2160 px (2×)</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" id="bgModeRow"><label class="f">Background across slides
+        <select id="bgMode">
+          <option value="continuous" selected>Continuous (flows from slide to slide)</option>
+          <option value="same">Same on every slide</option>
+          <option value="vary">Different on each slide</option>
+        </select></label></div>
+      <div class="tipbox" id="postTip">Instagram carousels hold up to 10 slides. 4:5 is the tallest feed size that isn't cropped, and the side margins keep text clear of the profile-grid crop.</div>
+    </section>
+
+    <section class="post-only">
+      <h2>Text</h2>
+      <div id="slides"></div>
+      <div class="row" id="slideBtns"><button class="btn ghost sm" id="addSlide" type="button">+ Add slide</button></div>
+      <p class="hint">First line = headline (big). Anything after it = body copy. Keep to one idea per slide, a few lines of body at most, and make the last slide a call to action.</p>
+      <div class="row" style="margin-top:14px">
+        <div style="flex:1;min-width:120px"><span style="font-size:12px;color:var(--soft)">Alignment</span>
+          <div class="seg" id="pAlign" style="margin-top:6px"><button type="button" data-v="left" aria-pressed="true">Left</button><button type="button" data-v="center" aria-pressed="false">Centre</button></div></div>
+        <div style="flex:1;min-width:150px"><span style="font-size:12px;color:var(--soft)">Vertical</span>
+          <div class="seg" id="pVpos" style="margin-top:6px"><button type="button" data-v="top" aria-pressed="false">Top</button><button type="button" data-v="middle" aria-pressed="true">Middle</button><button type="button" data-v="bottom" aria-pressed="false">Bottom</button></div></div>
+      </div>
+      <div id="carouselOpts">
+        <label class="chk"><input type="checkbox" id="pNumbers" checked> Slide numbers (01 / 06)</label>
+        <label class="chk"><input type="checkbox" id="pCue" checked> “Swipe” cue on all but the last slide</label>
+        <label class="f" style="margin-top:10px">Last-slide call to action <input type="text" id="pCta" value="Follow @leamingtondrop" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:#fff;color:var(--ink)"></label>
+      </div>
+    </section>
+
+    <section class="post-only">
+      <h2>Small logo</h2>
+      <div class="pos" id="logoPosTop">
+        <button type="button" data-v="top-left" aria-pressed="true">Top left</button>
+        <button type="button" data-v="top-center" aria-pressed="false">Top centre</button>
+        <button type="button" data-v="top-right" aria-pressed="false">Top right</button>
+      </div>
+      <div class="pos" id="logoPosBot">
+        <button type="button" data-v="bottom-left" aria-pressed="false">Bottom left</button>
+        <button type="button" data-v="bottom-center" aria-pressed="false">Bottom centre</button>
+        <button type="button" data-v="bottom-right" aria-pressed="false">Bottom right</button>
+      </div>
+      <div class="row"><button class="btn ghost sm" id="logoOff" type="button" aria-pressed="false">No logo</button></div>
+      <div class="row"><label class="f">Size <input type="range" id="logoSize" min="8" max="40" value="20"></label>
+        <label class="f" id="logoOnWrap">Show on <select id="logoOn"><option value="all">Every slide</option><option value="first">First slide only</option><option value="last">Last slide only</option><option value="firstlast">First and last</option></select></label></div>
+      <p class="hint">The logo style and colour come from the Logo section below; the colour also sets the text colour (Auto picks light or dark to suit the background).</p>
+    </section>
+
+    <section class="post-only">
+      <h2>Export</h2>
+      <div class="row" style="margin-top:0">
+        <button class="btn accent" id="dlSlide" type="button">Download this slide</button>
+        <button class="btn" id="dlZip" type="button">Download all (ZIP)</button>
+      </div>
+      <p class="hint" id="exportHint">PNG at Instagram's native size. In a ZIP the slides are numbered in order, ready to upload as a carousel.</p>
+    </section>
 
     <section>
       <h2>Logo</h2>
@@ -108,7 +217,7 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px rgba(255,
     <section>
       <h2>Background</h2>
       <div class="seg" id="bgType">
-        <button type="button" data-v="transparent" aria-pressed="false">Clear</button>
+        <button type="button" class="logo-only" data-v="transparent" aria-pressed="false">Clear</button>
         <button type="button" data-v="solid" aria-pressed="false">Solid</button>
         <button type="button" data-v="pearl" aria-pressed="true">Pearl</button>
         <button type="button" data-v="refract" aria-pressed="false">Refract</button>
@@ -197,7 +306,7 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px rgba(255,
       </div>
     </section>
 
-    <section>
+    <section class="logo-only">
       <h2>Canvas</h2>
       <div class="row" style="margin-top:0">
         <label class="f">Shape
@@ -231,7 +340,7 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px rgba(255,
       <p class="hint">Tip: you can also drag the logo around in the preview, and scroll over it while holding Shift to resize.</p>
     </section>
 
-    <section>
+    <section class="logo-only">
       <h2>Export</h2>
       <div class="row" style="margin-top:0">
         <button class="btn accent" id="dlPng" type="button">Download PNG</button>
@@ -297,6 +406,13 @@ var state = {
   seed: 482913, palette: 'orangeblue', rpalette: 'pinkblue', glass: 0, mesh: 'circles', meshSize: 1, layers: 7, line: { dx1: 0, y1: .3, dx2: -.16, y2: .7 }, soft: 0, grain: .4, rcustom: { bg: '#f9c7fb', light: '#6aa8ff', dark: '#1a0c33' }, randPal: true, core: 0, sat: 1.9,
   image: null, imageName: '', dim: 0,
   shape: '1:1', size: 2000, pad: .14, backdrop: 'checker', scale: 1, ox: 0, oy: 0
+};
+state.mode = 'logo';
+state.post = {
+  type: 'single', ratio: '4:5', size: 1080, bgMode: 'continuous', cur: 0,
+  slides: [{ t: 'Headline that stops the scroll\nOne short line that earns the swipe' }],
+  align: 'left', vpos: 'middle', numbers: true, cue: true, cta: 'Follow @leamingtondrop',
+  logoPos: 'top-left', logoOn: 'all', logoSize: .2
 };
 var history = [state.seed], histIdx = 0;
 var fontB64 = null, M = null, uidCounter = 0, lastUrl = null;
@@ -430,7 +546,7 @@ function logoArt(variant, color, uid){
   return null;
 }
 
-function backgroundArt(W, H, uid){
+function backgroundArt(W, H, uid, mRef){
   var defs = [], body = '';
   if (state.bg === 'solid'){
     body = '<rect width="' + W + '" height="' + H + '" fill="' + state.solid + '"/>';
@@ -438,7 +554,7 @@ function backgroundArt(W, H, uid){
     body = '<image x="0" y="0" width="' + W + '" height="' + H + '" preserveAspectRatio="xMidYMid slice" href="' + state.image + '" xlink:href="' + state.image + '"/>';
     if (state.dim > 0) body += '<rect width="' + W + '" height="' + H + '" fill="#000" fill-opacity="' + (state.dim / 100).toFixed(2) + '"/>';
   } else if (state.bg === 'pearl'){
-    var p = pal(), r = rng(state.seed), cols = anchorOrange(shuffle(p.colors.slice(), r)), m = Math.sqrt(W * H), blobs = '';
+    var p = pal(), r = rng(state.seed), cols = anchorOrange(shuffle(p.colors.slice(), r)), m = mRef || Math.sqrt(W * H), blobs = '';
     var shp = state.mesh, ms = state.meshSize;
     for (var i = 0; i < 9; i++){
       var col = cols[i % cols.length], bx = (-.1 + r() * 1.2) * W, by = (-.1 + r() * 1.2) * H, rot = r() * 360, sz = r(), sz2 = r();
@@ -640,6 +756,7 @@ function render(){ if (pending) return; pending = requestAnimationFrame(function
 function draw(){
   if (!M) return;
   sync();
+  if (state.mode === 'post'){ $('preview').className = 'preview post'; $('prev').className = ''; $('backdrop').classList.add('hidden'); syncPost(); drawPost(); return; }
   var art0 = logoArt(state.variant, 'x', 'p_'), full = canvasSize(art0);
   var out = buildSVG({ embed: true, canvas: canvasSize(art0, previewLong()) });
   var url = URL.createObjectURL(new Blob([out.svg], { type: 'image/svg+xml' }));
@@ -762,8 +879,252 @@ function exportSVG(){
   download(new Blob([out.svg], { type: 'image/svg+xml' }), fileBase() + '.svg');
 }
 
+
+/* ------------------------------------------------------------------ Instagram post mode */
+var P = state.post, MAXSLIDES = 10, MG = 96;
+var STARTERS = [
+  'Headline that stops the scroll\nOne short line that earns the swipe',
+  'One idea per slide\nKeep the body copy to a few short lines so it reads easily on a phone.',
+  'Make the last slide count\nTell people exactly what to do next: follow, save, share or visit.'
+];
+function postDims(){
+  var r = P.ratio === '1:1' ? [1, 1] : P.ratio === '3:4' ? [3, 4] : [4, 5];
+  return { W: 1080, H: Math.round(1080 * r[1] / r[0]) };
+}
+var _mc = document.createElement('canvas').getContext('2d');
+function tw(str, size, weight){ _mc.font = weight + ' ' + size + 'px BricolageEmbed'; return _mc.measureText(str).width; }
+function wrapText(text, size, weight, maxW){
+  var out = [], tooWide = false;
+  String(text).split('\n').forEach(function(par){
+    if (!par.trim()){ out.push(''); return; }
+    var words = par.trim().split(/\s+/), line = '';
+    words.forEach(function(w){
+      if (tw(w, size, weight) > maxW) tooWide = true;
+      var t = line ? line + ' ' + w : w;
+      if (line && tw(t, size, weight) > maxW){ out.push(line); line = w; } else line = t;
+    });
+    if (line) out.push(line);
+  });
+  return { lines: out, tooWide: tooWide };
+}
+function esc(t){ return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+/* Lays the slide's text out inside the free region and returns the SVG for it. */
+function textArt(slide, i, N, W, region, color){
+  var parts = String(slide.t || '').replace(/\r/g, '').split('\n'), hi = -1, k;
+  for (k = 0; k < parts.length; k++){ if (parts[k].trim()){ hi = k; break; } }
+  var head = hi < 0 ? '' : parts[hi].trim(), body = hi < 0 ? '' : parts.slice(hi + 1).join('\n').replace(/^\n+|\n+$/g, '');
+  var last = N > 1 && i === N - 1, hasCta = last && P.cta && P.cta.trim();
+  var maxW = W - 2 * MG, bodyW = Math.min(maxW, 860), cover = i === 0;
+  var HS = (cover ? [156, 138, 122, 108, 96, 84, 74, 64, 56] : [124, 112, 100, 90, 80, 72, 64, 56]), BS = [46, 42, 38, 34, 30];
+  var ctaH = hasCta ? 96 : 0, regionH = region.y1 - region.y0, pick = null;
+  for (var a = 0; a < HS.length && !pick; a++){
+    var hl = wrapText(head, HS[a], 600, maxW); if (hl.tooWide && a < HS.length - 1) continue;
+    for (var b = 0; b < BS.length; b++){
+      var bl = body ? wrapText(body, BS[b], 400, bodyW) : { lines: [] };
+      var hH = hl.lines.length * HS[a] * .98, bH = bl.lines.length ? 36 + bl.lines.length * BS[b] * 1.36 : 0, cH = hasCta ? 56 + ctaH : 0;
+      if (hH + bH + cH <= regionH || (a === HS.length - 1 && b === BS.length - 1)){ pick = { hs: HS[a], bs: BS[b], hl: hl.lines, bl: bl.lines, hH: hH, bH: bH, cH: cH }; break; }
+    }
+  }
+  if (!pick) return '';
+  var total = pick.hH + pick.bH + pick.cH, y = region.y0;
+  if (P.vpos === 'middle') y = region.y0 + (regionH - total) / 2; else if (P.vpos === 'bottom') y = region.y1 - total;
+  var center = P.align === 'center', x = center ? W / 2 : MG, anchor = center ? 'middle' : 'start', out = '';
+  var hFont = 'font-family="' + FAMILY + '" font-weight="600" font-size="' + pick.hs + '" letter-spacing="' + f(-pick.hs * .03) + '" style="font-variation-settings:\'opsz\' 96"';
+  pick.hl.forEach(function(ln, n){ out += '<text x="' + f(x) + '" y="' + f(y + n * pick.hs * .98 + pick.hs * .8) + '" text-anchor="' + anchor + '" fill="' + color + '" ' + hFont + '>' + esc(ln) + '</text>'; });
+  y += pick.hH;
+  if (pick.bl.length){
+    y += 36;
+    var bFont = 'font-family="' + FAMILY + '" font-weight="400" font-size="' + pick.bs + '" style="font-variation-settings:\'opsz\' 24"';
+    pick.bl.forEach(function(ln, n){ if (ln) out += '<text x="' + f(x) + '" y="' + f(y + n * pick.bs * 1.36 + pick.bs * .95) + '" text-anchor="' + anchor + '" fill="' + color + '" fill-opacity=".86" ' + bFont + '>' + esc(ln) + '</text>'; });
+    y += pick.bl.length * pick.bs * 1.36;
+  }
+  if (hasCta){
+    y += 56;
+    var cs = 40, label = P.cta.trim(), lw = tw(label, cs, 600), pw = lw + 40 + 72 + 44, px = center ? (W - pw) / 2 : MG;
+    out += '<rect x="' + f(px) + '" y="' + f(y) + '" width="' + f(pw) + '" height="' + ctaH + '" rx="' + (ctaH / 2) + '" fill="none" stroke="' + color + '" stroke-width="3"/>' +
+      '<text x="' + f(px + 44) + '" y="' + f(y + ctaH / 2 + cs * .34) + '" fill="' + color + '" font-family="' + FAMILY + '" font-weight="600" font-size="' + cs + '">' + esc(label) + '</text>' +
+      '<path d="M' + f(px + pw - 76) + ' ' + f(y + ctaH / 2) + 'h40m-14 -14l14 14l-14 14" fill="none" stroke="' + color + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  return out;
+}
+
+/* One slide as SVG. size = output width in px (the artwork is laid out on a 1080-wide board and scaled). */
+function buildSlideSVG(i, opts){
+  opts = opts || {};
+  var d = postDims(), W = d.W, H = d.H, N = P.slides.length, uid = 'u' + (++uidCounter) + '_', color = logoColor();
+  var wide = P.bgMode === 'continuous' && N > 1, bg, defs = [], body = '', vbx = 0;
+  var restore = state.bg;
+  if (state.bg === 'transparent') state.bg = 'solid';   // an Instagram post always needs a backdrop
+  if (wide){ bg = backgroundArt(W * N, H, uid, Math.sqrt(W * H)); vbx = i * W; }
+  else if (P.bgMode === 'vary' && N > 1){ var sv = state.seed; state.seed = sv + i * 7919; bg = backgroundArt(W, H, uid); state.seed = sv; }
+  else bg = backgroundArt(W, H, uid);
+  state.bg = restore;
+  defs = defs.concat(bg.defs); body += bg.body;
+  if (restore === 'transparent' && !bg.body) body = '<rect width="' + W + '" height="' + H + '" fill="#fff"/>';
+  // layout: logo on one edge, slide counter + swipe cue on the opposite edge
+  var pos = P.logoPos, showLogo = pos !== 'none' && (P.logoOn === 'all' || (P.logoOn === 'first' && i === 0) || (P.logoOn === 'last' && i === N - 1) || (P.logoOn === 'firstlast' && (i === 0 || i === N - 1)) || N === 1);
+  var logoEdge = pos === 'none' ? 'top' : pos.split('-')[0], metaEdge = logoEdge === 'top' ? 'bottom' : 'top';
+  var wantMeta = N > 1 && (P.numbers || P.cue), reserve = 132;
+  var region = { y0: MG, y1: H - MG };
+  if (showLogo || (logoEdge === 'top' && pos !== 'none')){ if (logoEdge === 'top') region.y0 = MG + reserve; else region.y1 = H - MG - reserve; }
+  if (wantMeta){ if (metaEdge === 'top') region.y0 = Math.max(region.y0, MG + reserve); else region.y1 = Math.min(region.y1, H - MG - reserve); }
+  var layer = '';
+  if (showLogo){
+    var art = logoArt(state.variant, color, uid), cw = art.bbox.x1 - art.bbox.x0, ch = art.bbox.y1 - art.bbox.y0;
+    var targetW = P.logoSize * W * (state.variant === 'drop' ? .5 : state.variant === 'split' ? .72 : 1), sc = targetW / cw, lw = cw * sc, lh = ch * sc;
+    var lx = pos.indexOf('left') > -1 ? MG : pos.indexOf('right') > -1 ? W - MG - lw : (W - lw) / 2, ly = logoEdge === 'top' ? MG : H - MG - lh;
+    layer += '<g transform="translate(' + f(lx - art.bbox.x0 * sc) + ' ' + f(ly - art.bbox.y0 * sc) + ') scale(' + sc.toFixed(6) + ')">' + art.body + '</g>';
+    defs = defs.concat(art.defs);
+  }
+  if (wantMeta){
+    var my = metaEdge === 'top' ? MG + 30 : H - MG - 4, mf = 'font-family="' + FAMILY + '" font-weight="500" font-size="34" fill="' + color + '" fill-opacity=".72"';
+    if (P.numbers) layer += '<text x="' + MG + '" y="' + my + '" ' + mf + ' letter-spacing="1">' + String(i + 1).padStart(2, '0') + ' / ' + String(N).padStart(2, '0') + '</text>';
+    if (P.cue && i < N - 1){
+      layer += '<text x="' + (W - MG - 78) + '" y="' + my + '" text-anchor="end" ' + mf + '>Swipe</text>' +
+        '<path d="M' + (W - MG - 64) + ' ' + (my - 12) + 'h64m-16 -16l16 16l-16 16" fill="none" stroke="' + color + '" stroke-opacity=".72" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+  }
+  layer += textArt(P.slides[i], i, N, W, region, color);
+  var S = opts.size || d.W, outH = Math.round(S * H / W);
+  var style = (opts.embed && fontB64) ? '<style>@font-face{font-family:BricolageEmbed;src:url(data:font/woff2;base64,' + fontB64 + ') format("woff2");font-weight:400 800;}</style>' : '';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + S + '" height="' + outH + '" viewBox="' + vbx + ' 0 ' + W + ' ' + H + '"><defs>' + style + defs.join('') + '</defs>' +
+    body + '<g transform="translate(' + vbx + ' 0)">' + layer + '</g></svg>';
+  return { svg: svg, W: S, H: outH };
+}
+
+var thumbUrls = [], thumbTimer = 0;
+function drawPost(){
+  var N = P.slides.length; if (P.cur >= N) P.cur = N - 1;
+  var box = $('preview'), dpr = window.devicePixelRatio || 1, want = Math.ceil(Math.min(box.clientWidth, box.clientHeight * (postDims().W / postDims().H)) * dpr);
+  var out = buildSlideSVG(P.cur, { embed: true, size: Math.max(540, Math.min(1080, want)) });
+  var url = URL.createObjectURL(new Blob([out.svg], { type: 'image/svg+xml' }));
+  var img = $('prev'); img.onload = function(){ if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = url; };
+  img.src = url; img.style.aspectRatio = out.W + ' / ' + out.H;
+  var d = postDims();
+  $('metaText').textContent = (P.size) + ' × ' + Math.round(P.size * d.H / d.W) + ' px · ' + P.ratio + (N > 1 ? ' · slide ' + (P.cur + 1) + ' of ' + N : '') + (state.bg === 'pearl' || state.bg === 'refract' ? ' · seed ' + state.seed : '');
+  clearTimeout(thumbTimer); thumbTimer = setTimeout(drawStrip, 220);
+}
+function drawStrip(){
+  var strip = $('strip'), N = P.slides.length;
+  thumbUrls.forEach(function(u){ URL.revokeObjectURL(u); }); thumbUrls = [];
+  if (N < 2){ strip.innerHTML = ''; strip.classList.add('hidden'); return; }
+  strip.classList.remove('hidden'); strip.innerHTML = '';
+  for (var i = 0; i < N; i++){
+    (function(i){
+      var o = buildSlideSVG(i, { embed: true, size: 220 }), u = URL.createObjectURL(new Blob([o.svg], { type: 'image/svg+xml' })); thumbUrls.push(u);
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', i === P.cur ? 'true' : 'false'); b.setAttribute('aria-label', 'Slide ' + (i + 1));
+      b.innerHTML = '<img alt="" src="' + u + '"><span>' + (i + 1) + '</span>'; b.addEventListener('click', function(){ P.cur = i; buildSlides(); render(); });
+      strip.appendChild(b);
+    })(i);
+  }
+}
+
+/* ---- slide editor ---- */
+function buildSlides(){
+  var N = P.slides.length, car = P.type === 'carousel', host = $('slides');
+  host.innerHTML = P.slides.map(function(sl, i){
+    return '<div class="slide' + (i === P.cur ? ' cur' : '') + '" data-i="' + i + '"><div class="hd"><b>' + (car ? 'Slide ' + (i + 1) : 'Text') + '</b><span class="sp"></span>' +
+      (car ? '<button type="button" data-a="up" ' + (i === 0 ? 'disabled' : '') + ' title="Move earlier">↑</button><button type="button" data-a="down" ' + (i === N - 1 ? 'disabled' : '') + ' title="Move later">↓</button><button type="button" data-a="del" ' + (N <= 2 ? 'disabled' : '') + ' title="Remove">✕</button>' : '') +
+      '</div><textarea data-i="' + i + '" spellcheck="true" placeholder="Headline on the first line, body copy below">' + esc(sl.t) + '</textarea></div>';
+  }).join('');
+  $('addSlide').disabled = N >= MAXSLIDES;
+  $('slideBtns').classList.toggle('hidden', !car);
+  $('carouselOpts').classList.toggle('hidden', !car);
+  $('bgModeRow').classList.toggle('hidden', !car);
+  $('dlZip').classList.toggle('hidden', !car);
+  $('exportHint').textContent = car ? 'PNG at Instagram\'s size. The ZIP has every slide numbered in order, ready to upload as a carousel.' : 'PNG at Instagram\'s native size.';
+}
+function setType(t){
+  P.type = t;
+  if (t === 'carousel'){ while (P.slides.length < 3) P.slides.push({ t: STARTERS[P.slides.length] || STARTERS[1] }); }
+  else { P.slides = [P.slides[Math.min(P.cur, P.slides.length - 1)] || P.slides[0]]; P.cur = 0; }
+  buildSlides(); render();
+}
+
+/* ---- export ---- */
+var CRC = (function(){ var t = [], c, n, k; for (n = 0; n < 256; n++){ c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return function(u8){ var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) c = t[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }; })();
+function makeZip(files){   // store-only ZIP, no library needed
+  var chunks = [], central = [], offset = 0, enc = new TextEncoder();
+  files.forEach(function(f){
+    var nm = enc.encode(f.name), crc = CRC(f.data), sz = f.data.length, lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true); lh.setUint32(14, crc, true); lh.setUint32(18, sz, true); lh.setUint32(22, sz, true); lh.setUint16(26, nm.length, true);
+    chunks.push(new Uint8Array(lh.buffer), nm, f.data);
+    var ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true); ch.setUint32(16, crc, true); ch.setUint32(20, sz, true); ch.setUint32(24, sz, true); ch.setUint16(28, nm.length, true); ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), nm); offset += 30 + nm.length + sz;
+  });
+  var cs = central.reduce(function(a, b){ return a + b.length; }, 0), end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cs, true); end.setUint32(16, offset, true);
+  return new Blob(chunks.concat(central, [new Uint8Array(end.buffer)]), { type: 'application/zip' });
+}
+function slidePNG(i){
+  return new Promise(function(resolve, reject){
+    var o = buildSlideSVG(i, { embed: true, size: P.size }), url = URL.createObjectURL(new Blob([o.svg], { type: 'image/svg+xml' })), img = new Image();
+    img.onload = function(){ var c = document.createElement('canvas'); c.width = o.W; c.height = o.H; c.getContext('2d').drawImage(img, 0, 0, o.W, o.H); c.toBlob(function(b){ URL.revokeObjectURL(url); b ? resolve(b) : reject(); }, 'image/png'); };
+    img.onerror = function(){ URL.revokeObjectURL(url); reject(); }; img.src = url;
+  });
+}
+function postBase(){ return 'leamdrop-post'; }
+function exportSlide(){ slidePNG(P.cur).then(function(b){ download(b, postBase() + '-' + String(P.cur + 1).padStart(2, '0') + '.png'); }, function(){ alert('Could not render the PNG.'); }); }
+function exportZip(){
+  var N = P.slides.length, files = [], btn = $('dlZip'), label = btn.textContent; btn.disabled = true;
+  (function next(i){
+    if (i >= N){ download(makeZip(files), postBase() + '-carousel.zip'); btn.disabled = false; btn.textContent = label; return; }
+    btn.textContent = 'Rendering ' + (i + 1) + ' / ' + N + '…';
+    slidePNG(i).then(function(b){ return b.arrayBuffer(); }).then(function(buf){ files.push({ name: postBase() + '-' + String(i + 1).padStart(2, '0') + '.png', data: new Uint8Array(buf) }); next(i + 1); }, function(){ btn.disabled = false; btn.textContent = label; alert('Could not render slide ' + (i + 1) + '.'); });
+  })(0);
+}
+
+function setMode(m){
+  if (state.mode === m) return;
+  state.mode = m; document.body.setAttribute('data-mode', m);
+  if (m === 'post' && state.bg === 'transparent') state.bg = 'pearl';
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs [role=tab]'), function(b){ b.setAttribute('aria-selected', b.dataset.mode === m ? 'true' : 'false'); });
+  if (m === 'post') buildSlides();
+  render();
+}
+function wirePost(){
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs [role=tab]'), function(b){ b.addEventListener('click', function(){ setMode(b.dataset.mode); }); });
+  $('postType').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) setType(b.dataset.v); });
+  $('postRatio').addEventListener('change', function(e){ P.ratio = e.target.value; render(); });
+  $('postSize').addEventListener('change', function(e){ P.size = +e.target.value; render(); });
+  $('bgMode').addEventListener('change', function(e){ P.bgMode = e.target.value; render(); });
+  var host = $('slides');
+  host.addEventListener('input', function(e){ var ta = e.target.closest('textarea'); if (!ta) return; P.slides[+ta.dataset.i].t = ta.value; render(); });
+  host.addEventListener('focusin', function(e){ var c = e.target.closest('.slide'); if (!c) return; var i = +c.dataset.i; if (i !== P.cur){ P.cur = i; Array.prototype.forEach.call(host.children, function(el, k){ el.classList.toggle('cur', k === i); }); render(); } });
+  host.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-a]'); if (!b || b.disabled) return; var c = b.closest('.slide'), i = +c.dataset.i, a = b.dataset.a, arr = P.slides;
+    if (a === 'del'){ arr.splice(i, 1); P.cur = Math.min(P.cur, arr.length - 1); }
+    else { var j = a === 'up' ? i - 1 : i + 1; var t = arr[i]; arr[i] = arr[j]; arr[j] = t; P.cur = j; }
+    buildSlides(); render();
+  });
+  $('addSlide').addEventListener('click', function(){ if (P.slides.length >= MAXSLIDES) return; P.slides.splice(P.cur + 1, 0, { t: STARTERS[1] }); P.cur++; buildSlides(); render(); });
+  $('pAlign').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.align = b.dataset.v; render(); } });
+  $('pVpos').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.vpos = b.dataset.v; render(); } });
+  $('pNumbers').addEventListener('change', function(e){ P.numbers = e.target.checked; render(); });
+  $('pCue').addEventListener('change', function(e){ P.cue = e.target.checked; render(); });
+  $('pCta').addEventListener('input', function(e){ P.cta = e.target.value; render(); });
+  function posClick(e){ var b = e.target.closest('button'); if (b){ P.logoPos = b.dataset.v; render(); } }
+  $('logoPosTop').addEventListener('click', posClick); $('logoPosBot').addEventListener('click', posClick);
+  $('logoOff').addEventListener('click', function(){ P.logoPos = 'none'; render(); });
+  $('logoSize').addEventListener('input', function(e){ P.logoSize = e.target.value / 100; render(); });
+  $('logoOn').addEventListener('change', function(e){ P.logoOn = e.target.value; render(); });
+  $('dlSlide').addEventListener('click', exportSlide);
+  $('dlZip').addEventListener('click', exportZip);
+}
+function syncPost(){
+  setPressed($('postType'), 'data-v', P.type); setPressed($('pAlign'), 'data-v', P.align); setPressed($('pVpos'), 'data-v', P.vpos);
+  setPressed($('logoPosTop'), 'data-v', P.logoPos); setPressed($('logoPosBot'), 'data-v', P.logoPos); $('logoOff').setAttribute('aria-pressed', P.logoPos === 'none' ? 'true' : 'false');
+  $('postRatio').value = P.ratio; $('postSize').value = P.size; $('bgMode').value = P.bgMode; $('logoOn').value = P.logoOn; $('logoSize').value = Math.round(P.logoSize * 100);
+  $('logoOnWrap').classList.toggle('hidden', P.type !== 'carousel' || P.logoPos === 'none');
+  paintRanges();
+}
+
 /* ------------------------------------------------------------------ wiring */
 function wire(){
+  wirePost();
   $('variants').addEventListener('click', function(e){ var b = e.target.closest('.variant'); if (!b) return; state.variant = b.dataset.v; render(); });
   $('dropStyle').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; state.dropStyle = b.dataset.v; render(); });
   $('bgType').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; state.bg = b.dataset.v; render(); });
@@ -820,6 +1181,7 @@ function wire(){
   var drag = null, prevEl = $('prev');
   prevEl.style.cursor = 'grab'; prevEl.style.touchAction = 'none'; prevEl.draggable = false;
   prevEl.addEventListener('pointerdown', function(e){
+    if (state.mode !== 'logo') return;
     var r = prevEl.getBoundingClientRect();
     drag = { x: e.clientX, y: e.clientY, ox: state.ox, oy: state.oy, w: r.width, h: r.height };
     prevEl.setPointerCapture(e.pointerId); prevEl.style.cursor = 'grabbing'; e.preventDefault();
@@ -833,7 +1195,7 @@ function wire(){
   function endDrag(){ drag = null; prevEl.style.cursor = 'grab'; }
   prevEl.addEventListener('pointerup', endDrag); prevEl.addEventListener('pointercancel', endDrag);
   prevEl.addEventListener('wheel', function(e){
-    if (!e.shiftKey) return;
+    if (state.mode !== 'logo' || !e.shiftKey) return;
     e.preventDefault();
     var d = e.deltaY || e.deltaX;
     state.scale = Math.max(.2, Math.min(2, state.scale * Math.exp(-d * 0.002)));

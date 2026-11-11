@@ -310,13 +310,14 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .drop-filter .ic-f{transition:opacity .2s ease .05s,transform .35s cubic-bezier(.34,1.56,.64,1)}
 .drop-filter.is-open .ic-f{opacity:0;transform:rotate(90deg) scale(.3);transition-delay:0s}
 .drop-filter .ic-x path,.drop-filter .ic-t path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .18s ease-in}
-.drop-filter.is-open:not(.on) .ic-x path,.drop-filter.is-open.on .ic-t path{stroke-dashoffset:0;transition:stroke-dashoffset .34s cubic-bezier(.22,1,.36,1) .16s}
-.drop-filter.is-open:not(.on) .ic-x path:nth-child(2){transition-delay:.26s}
+.drop-filter.is-open:not(.chg) .ic-x path,.drop-filter.is-open.chg .ic-t path{stroke-dashoffset:0;transition:stroke-dashoffset .34s cubic-bezier(.22,1,.36,1) .16s}
+.drop-filter.is-open:not(.chg) .ic-x path:nth-child(2){transition-delay:.26s}
 .drop-filter.is-open.on::after{opacity:0}
-.map-actions .drop-filter.is-open.on{background:#FF5514;color:#000}
-.map-actions .drop-filter.is-open.on:hover{background:#FF7440}
-.drop-filter.on::after{content:"";position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:#FF5514;box-shadow:0 0 0 3px #000;corner-shape:round}
-.drop-filter.on:hover::after{background:#F3F2EE}
+.map-actions .drop-filter.is-open.chg{background:#FF5514;color:#000}
+.map-actions .drop-filter.is-open.chg:hover{background:#FF7440}
+.drop-filter.on::after{content:"";position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:#E5322D;box-shadow:0 0 0 3px #000;corner-shape:round}
+.map-actions .drop-filter.on{background:#fff}
+.drop-filter.on:hover::after{background:#E5322D}
 /* filter popover: same black panel as the crayon picker, opening upward from the button */
 .fpick{position:fixed;left:0;top:0;z-index:400;width:272px;max-width:calc(100vw - 16px);padding:18px;border-radius:calc(18px * var(--rs,1));background:#0B0B0B;color:#F3F2EE;box-shadow:0 -10px 60px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08);opacity:0;transform:translateY(10px) scale(.9);transform-origin:50% 100%;pointer-events:none;visibility:hidden;font-size:14px;line-height:1.3;transition:opacity .2s ease,transform .22s ease,visibility 0s linear .22s}
 .fpick.open{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .22s ease,transform .45s cubic-bezier(.34,1.56,.64,1),visibility 0s}
@@ -896,12 +897,14 @@ html.loading{overflow:hidden}
     var x0 = side === 'r' ? x + g.pw / 2 + 6 : x - g.pw / 2 - 6 - w;
     return [{ x0: x0, x1: x0 + w, y0: y0, y1: y0 + h }, { x0: x - g.pw / 2, x1: x + g.pw / 2, y0: y - g.pw * 1.27, y1: y }];   // [label, marker]
   }
-  function hit(a, c){ var m = 3; return a.x0 < c.x1 + m && a.x1 > c.x0 - m && a.y0 < c.y1 + m && a.y1 > c.y0 - m; }
+  function hit(a, c, m){ return a.x0 < c.x1 + m && a.x1 > c.x0 - m && a.y0 < c.y1 + m && a.y1 > c.y0 - m; }
   function fits(p, side, placed, g){
     var mine = boxes(p, side, g); if (mine[0].x0 < 8 || mine[0].x1 > g.sw - 8) return false;
     for (var i = 0; i < placed.length; i++){
       var o = boxes(placed[i], placed[i].side, g);
-      if (hit(mine[0], o[0]) || hit(mine[0], o[1]) || hit(mine[1], o[0]) || hit(mine[1], o[1])) return false;
+      // on a phone the map is too small for 10+ clear labels, so pills may tuck a little under their neighbours (tap one to bring it to the front)
+      var mob = window.innerWidth <= 720, ml = mob ? -30 : 3, mm = mob ? -14 : 3;
+      if (hit(mine[0], o[0], ml) || hit(mine[0], o[1], mm) || hit(mine[1], o[0], mm) || hit(mine[1], o[1], mm)) return false;
     }
     return true;
   }
@@ -921,6 +924,15 @@ html.loading{overflow:hidden}
       var q = list[i], first = q.x < VW / 2 ? 'r' : 'l', sides = [first, first === 'r' ? 'l' : 'r'];
       for (var k = 0; k < 2; k++){
         if (fits(q, sides[k], all, g)){ var c = {}; for (var key in q) c[key] = q[key]; c.side = sides[k]; out.push(c); all.push(c); break; }
+      }
+    }
+    if (out.length < n){   // not enough clear space for the amount asked for: keep adding, letting pills tuck under their neighbours (hover or tap one to bring it forward)
+      var used = out.map(function(p){ return p.name; });
+      for (var j = 0; j < list.length && out.length < n; j++){
+        var q2 = list[j]; if (used.indexOf(q2.name) >= 0) continue;
+        var f2 = q2.x < VW / 2 ? 'r' : 'l', side2 = f2;
+        var bx = boxes(q2, f2, g)[0]; if (bx.x0 < 8 || bx.x1 > g.sw - 8) side2 = f2 === 'r' ? 'l' : 'r';
+        var c2 = {}; for (var key2 in q2) c2[key2] = q2[key2]; c2.side = side2; out.push(c2); used.push(q2.name);
       }
     }
     return out.sort(function(p, q){ return p.y - q.y; });   // drop in from the top of the map downwards
@@ -998,7 +1010,7 @@ html.loading{overflow:hidden}
   document.addEventListener('pointerdown', function(e){ if (!e.target.closest('.pin')) clearActive(); });
   /* ---- Filter popover (next to the Drop button): how many places show, and which tags ---- */
   var TAGEMO = {'Pub':'🍺','Gastropub':'🍻','Restaurant':'🍽️','Bar':'🍸','Cocktail bar':'🍹','Wine bar':'🍷','Cafe':'☕','Coffee shop':'☕','Bakery':'🥐','Takeaway':'🥡','Deli':'🥪','Street food':'🌮','Bistro':'🥖','Brasserie':'🥂','Brunch spot':'🍳','Burger':'🍔','Fine dining':'✨','European':'🇪🇺','British':'🇬🇧','Italian':'🍝','French':'🥐','Spanish / Tapas':'🥘','Greek':'🥙','Mediterranean':'🫒','Indian':'🍛','Chinese':'🥟','Japanese':'🍱','Sushi':'🍣','Thai':'🍜','Vietnamese':'🍲','Korean':'🥢','Mexican':'🌮','Middle Eastern':'🧆','American':'🇺🇸','Pizza':'🍕','Steak':'🥩','Seafood':'🦞','Fish & chips':'🐟','Wings':'🍗','Vegetarian / vegan':'🥦','Breakfast & brunch':'🍳','Afternoon tea':'🫖','Sunday roast':'🍖','Desserts':'🍰','Casual dining':'🍴'};
-  var FMIN = 3, FMAX = 20, fBtn = outro.querySelector('#fpOpen'), fPop = document.createElement('div'), fTimer = null;
+  var fSnap = '', FMIN = 3, FMAX = 20, fBtn = outro.querySelector('#fpOpen'), fPop = document.createElement('div'), fTimer = null;
   fPop.className = 'fpick'; fPop.setAttribute('role', 'dialog'); fPop.setAttribute('aria-label', 'Filter places'); fPop.setAttribute('aria-hidden', 'true');
   fPop.innerHTML = '<div style="--i:0"><div class="fp-row"><span>Showing</span><b data-n></b></div><div class="fp-track" data-track role="slider" tabindex="0" aria-label="Number of places showing" aria-valuemin="' + FMIN + '" aria-valuemax="' + FMAX + '"><span class="cp-th"></span></div></div>'
     + '<div style="--i:1"><div class="fp-row"><span>Rating</span></div><button type="button" class="fp-select" data-rsel aria-expanded="false"><span data-rselt>Any rating</span><svg class="ch" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></button><div class="fp-list" data-rlist><div><div class="fp-opts" data-ropts></div></div></div></div>'
@@ -1032,9 +1044,11 @@ html.loading{overflow:hidden}
     fSelT.textContent = !filt.tags.length ? 'All tags' : filt.tags.length <= 2 ? filt.tags.join(', ') : filt.tags.length + ' tags';
     [].forEach.call(fOpts.querySelectorAll('.fp-opt'), function(b){ b.classList.toggle('on', filt.tags.indexOf(b.dataset.t) >= 0); });
     var m = POOL.filter(matches).length; fCount.textContent = m + (m === 1 ? ' place matches' : ' places match');
-    fBtn.classList.toggle('on', filt.n !== COUNT || filt.tags.length > 0 || filt.minR > 0); fLabel();
+    fBtn.classList.toggle('on', filt.n !== COUNT || filt.tags.length > 0 || filt.minR > 0);
+    fBtn.classList.toggle('chg', fSnap !== '' && JSON.stringify([filt.n, filt.tags.slice().sort(), filt.minR]) !== fSnap);   // the tick: something differs from how it was when the popover opened
+    fLabel();
   }
-  function fLabel(){ fBtn.setAttribute('aria-label', !fPop.classList.contains('open') ? 'Filter places' : fBtn.classList.contains('on') ? 'Confirm filters' : 'Close filters'); }
+  function fLabel(){ fBtn.setAttribute('aria-label', !fPop.classList.contains('open') ? 'Filter places' : fBtn.classList.contains('chg') ? 'Confirm filters' : 'Close filters'); }
   function reland(){ clearTimeout(fTimer); fTimer = setTimeout(function(){ if (landed){ unland(); land(); } }, 320); }   // re-drop the pins with the new filter
   // changing the amount doesn't start over: it drops in the extra places, or fades out the newest ones
   function adjust(){
@@ -1076,6 +1090,7 @@ html.loading{overflow:hidden}
     fPop.style.left = x + 'px'; fPop.style.top = 'auto'; fPop.style.bottom = (innerHeight - r.top + 12) + 'px';   // anchored to the button so the list grows upward
   }
   function setF(on){
+    if (on) fSnap = JSON.stringify([filt.n, filt.tags.slice().sort(), filt.minR]); else { fSnap = ''; fBtn.classList.remove('chg'); }
     if (on){ buildOpts(); fRender(); placeF(); }
     fPop.classList.toggle('open', on); fPop.setAttribute('aria-hidden', on ? 'false' : 'true'); fBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); fBtn.classList.toggle('is-open', on); fLabel();
     if (!on){ fList.classList.remove('open'); fSel.setAttribute('aria-expanded', 'false'); fRList.classList.remove('open'); fRSel.setAttribute('aria-expanded', 'false'); }
@@ -1292,7 +1307,7 @@ html.loading{overflow:hidden}
   async function intro(){
     window.__introBusy = true; var lines = [orig].concat(window.__magicLines || []);   // the heading itself is the first line
     h.style.minHeight = h.offsetHeight + 'px'; h.style.transition = 'opacity .4s ease';
-    await wait(700);   // a beat after it comes into view, with the title still blank
+    if (window.innerWidth > 720) await wait(700);   // a beat after it comes into view, with the title still blank (none on mobile)
     h.textContent = ''; sec.classList.remove('h-pre');
     for (var n = 0; n < lines.length; n++){
       h.textContent = ''; await type(lines[n]);

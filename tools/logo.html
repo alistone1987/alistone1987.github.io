@@ -91,6 +91,11 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
 .slide .hd b{color:var(--ink)}
 .slide .hd .sp{flex:1}
 .slide .hd button{font:inherit;font-size:12px;border:0;background:#fff;border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--soft)}
+.slide .seg.vis button{font-size:12px;padding:5px 2px}
+.emopick{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.emopick button{font-size:20px;line-height:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 6px;cursor:pointer}
+.slide .phrow{display:flex;align-items:center;gap:8px}
+.slide .phrow img{width:34px;height:34px;object-fit:cover;border-radius:8px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .slide .fl{display:flex;flex-direction:column;gap:3px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin-top:6px}
 .slide input[type=text]{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;color:var(--ink);text-transform:none;letter-spacing:0}
 .slide textarea{width:100%;min-height:56px;resize:vertical;font:inherit;font-size:14px;line-height:1.35;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;color:var(--ink)}
@@ -166,6 +171,7 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
         <div style="flex:1;min-width:150px"><span style="font-size:12px;color:var(--soft)">Vertical</span>
           <div class="seg" id="pVpos" style="margin-top:6px"><button type="button" data-v="top" aria-pressed="false">Top</button><button type="button" data-v="middle" aria-pressed="true">Middle</button><button type="button" data-v="bottom" aria-pressed="false">Bottom</button></div></div>
       </div>
+      <div class="row"><label class="f">Photo / emoji size <input type="range" id="photoSize" min="180" max="480" value="300"></label></div>
       <div id="carouselOpts">
         <label class="chk"><input type="checkbox" id="pNumbers" checked> Slide numbers (01 / 06)</label>
         <label class="chk"><input type="checkbox" id="pCue" checked> “Swipe” cue on all but the last slide</label>
@@ -235,7 +241,6 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
           <button class="btn accent" id="rand" type="button">Randomise</button>
           <button class="btn ghost sm" id="prevSeed" type="button" title="Previous">←</button>
           <button class="btn ghost sm" id="nextSeed" type="button" title="Next">→</button>
-          <label class="seedbox">Seed <input type="number" id="seed" min="1" max="999999999" step="1"></label>
         </div>
         <div class="row" style="margin-top:6px"><label class="f" style="flex:0 0 auto;min-width:0;flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="randPal" checked> Shuffle palette too</label></div>
       </div>
@@ -258,6 +263,11 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
           <label class="f">Palette
             <select id="palette"></select>
           </label>
+        </div>
+        <div class="row" style="margin-top:12px;display:block">
+          <span style="font-size:12px;color:var(--soft)">Colours <span>· click any to change them</span></span>
+          <div class="row" id="pearlColors" style="margin-top:6px"></div>
+          <div class="row"><label class="f" style="flex-direction:row;align-items:center;gap:8px;min-width:0;flex:0 0 auto">Base <input type="color" id="pBase" value="#06122a"></label></div>
         </div>
         <div class="row">
           <label class="f">Saturation <input type="range" id="sat" min="100" max="300" value="190"></label>
@@ -380,6 +390,7 @@ function anchorOrange(cols){
   if (cols.length > 4) cols[4] = ORANGE;
   return cols;
 }
+PALETTES.custom = { name:'Custom colours', dark:true, base:'#06122a', core:'4,12,30', colors:['#FF5514','#1f6bff','#2f3cff','#ff8a1f','#19c3ff','#ffd0a8','#6a4dff'] };
 var PAL_KEYS = Object.keys(PALETTES);
 /* Refracted gradients: stacked curved layers, each lighter at its edge and darker across its width. ramp goes light -> dark. */
 var RPALETTES = {
@@ -404,11 +415,12 @@ var state = {
   image: null, imageName: '', dim: 0,
   shape: '1:1', size: 2000, pad: .14, backdrop: 'checker', scale: 1, ox: 0, oy: 0
 };
+state.pcustom = { base: '#06122a', colors: ['#FF5514','#1f6bff','#2f3cff','#ff8a1f','#19c3ff','#ffd0a8','#6a4dff'] };
 state.mode = 'logo';
 state.post = {
   type: 'single', ratio: '4:5', size: 1080, bgMode: 'continuous', cur: 0,
   slides: [{ h: 'Headline that stops the scroll', b: 'One short line that earns the swipe' }],
-  align: 'left', vpos: 'middle', numbers: true, cue: true, cta: 'Follow @leamingtondrop',
+  photoSize: 300, align: 'left', vpos: 'middle', numbers: true, cue: true, cta: 'Follow @leamingtondrop',
   logoPos: 'top-left', logoOn: 'all', logoSize: .2
 };
 var history = [state.seed], histIdx = 0;
@@ -421,7 +433,14 @@ function shuffle(arr, r){ for (var i = arr.length - 1; i > 0; i--){ var j = Math
 function f(n){ return (Math.round(n * 100) / 100).toString(); }
 function yiq(hex){ var h = hex.replace('#',''); if (h.length === 3) h = h.split('').map(function(c){ return c + c; }).join(''); var r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16); return (r * 299 + g * 587 + b * 114) / 1000; }
 function hasDrop(){ return state.variant === 'drop'; }
-function pal(){ return PALETTES[state.palette]; }
+function pal(){
+  if (state.palette === 'custom'){   // the user's own colours: 7 mesh colours + a base
+    var c = state.pcustom, p = PALETTES.custom, rgb = hex2rgb(c.base);
+    p.base = c.base; p.colors = c.colors.slice(); p.dark = yiq(c.base) < 140; p.core = rgb.join(',');
+    return p;
+  }
+  return PALETTES[state.palette];
+}
 function rpal(){
   if (state.rpalette === 'custom'){
     var c = state.rcustom, p = RPALETTES.custom;
@@ -483,7 +502,7 @@ function radial(id, stops, extra){
 
 /* The glass drop, drawn in a 22 x 28 box. */
 function pearlDrop(uid){
-  var p = pal(), r = rng((state.seed ^ 0x9e3779b1) >>> 0), cols = anchorOrange(shuffle(p.colors.slice(), r));
+  var p = pal(), r = rng((state.seed ^ 0x9e3779b1) >>> 0), cols = state.palette === 'custom' ? shuffle(p.colors.slice(), r) : anchorOrange(shuffle(p.colors.slice(), r));
   var defs = '', blobs = '';
   for (var i = 0; i < 7; i++){
     var c = cols[i % cols.length], id = uid + 'b' + i;
@@ -713,6 +732,16 @@ function paintRanges(){
     r.style.setProperty('--p', p + '%');
   });
 }
+
+function syncPearlColors(){
+  var p = pal(), host = $('pearlColors');
+  if (!host.children.length) host.innerHTML = p.colors.map(function(c, i){ return '<input type="color" class="pc" data-i="' + i + '" value="' + c + '" title="Colour ' + (i + 1) + '">'; }).join('');
+  Array.prototype.forEach.call(host.children, function(el, i){ if (document.activeElement !== el) el.value = (p.colors[i] || '#000000').toLowerCase(); });
+  if (document.activeElement !== $('pBase')) $('pBase').value = p.base;
+}
+function pearlToCustom(){   // editing a colour turns the current palette into the custom one
+  if (state.palette !== 'custom'){ var p = pal(); state.pcustom = { base: p.base, colors: p.colors.slice() }; state.palette = 'custom'; }
+}
 function sync(){
   setPressed($('bgType'), 'data-v', state.bg);
   setPressed($('dropStyle'), 'data-v', state.dropStyle);
@@ -728,7 +757,7 @@ function sync(){
   Array.prototype.forEach.call($('logoColors').querySelectorAll('.sw'), function(b){ b.setAttribute('aria-pressed', (state.logoColor === (b.dataset.c || 'auto')) ? 'true' : 'false'); });
   Array.prototype.forEach.call($('solidColors').querySelectorAll('.sw'), function(b){ b.setAttribute('aria-pressed', state.solid.toLowerCase() === b.dataset.c.toLowerCase() ? 'true' : 'false'); });
   paintRanges();
-  $('seed').value = state.seed;
+  syncPearlColors();
   $('palette').value = state.palette; $('rpalette').value = state.rpalette;
   $('glass').value = Math.round(state.glass * 100); $('layers').value = state.layers; updateCurveEd();
   $('rcustomRow').classList.toggle('hidden', state.rpalette !== 'custom'); $('rcBg').value = state.rcustom.bg; $('rcLight').value = state.rcustom.light; $('rcDark').value = state.rcustom.dark; $('soft').value = Math.round(state.soft * 100); $('grain').value = Math.round(state.grain * 100);
@@ -768,7 +797,7 @@ function draw(){
   var img = $('prev'); img.onload = function(){ if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = url; };
   img.src = url;
   img.style.aspectRatio = out.W + ' / ' + out.H; img.dataset.ratio = out.W / out.H; fitPreview();
-  $('metaText').textContent = full.W + ' × ' + full.H + ' px' + (state.bg === 'refract' ? ' · seed ' + state.seed + ' · ' + rpal().name : (state.bg === 'pearl' || (state.dropStyle === 'pearl' && hasDrop()) ? ' · seed ' + state.seed + ' · ' + pal().name : ''));
+  $('metaText').textContent = full.W + ' × ' + full.H + ' px' + (state.bg === 'refract' ? ' · seed ' + state.seed + ' · ' + rpal().name : (state.bg === 'pearl' || (state.dropStyle === 'pearl' && hasDrop()) ? ' · ' + pal().name : ''));
 }
 
 /* ---- line-shape editor: a grid with a bezier line and two draggable handles ---- */
@@ -845,12 +874,12 @@ function randomise(){
     state.mesh = shapes[Math.floor(Math.random() * shapes.length)];
     state.meshSize = Math.round((.55 + Math.random() * 1.05) * 20) / 20;
   }
-  if (state.randPal){
+  if (state.randPal && !(state.bg === 'pearl' && state.palette === 'custom')){   // your own pearl colours are kept when you randomise
     if (state.bg === 'refract'){
       var ro = RPAL_KEYS.filter(function(k){ return k !== state.rpalette && k !== 'custom'; });
       state.rpalette = ro[Math.floor(Math.random() * ro.length)];
     } else {
-      var others = PAL_KEYS.filter(function(k){ return k !== state.palette; });
+      var others = PAL_KEYS.filter(function(k){ return k !== state.palette && k !== 'custom'; });
       state.palette = others[Math.floor(Math.random() * others.length)];
     }
   }
@@ -921,7 +950,13 @@ function textArt(slide, i, N, W, region, color){
   var last = N > 1 && i === N - 1, hasCta = last && P.cta && P.cta.trim();
   var maxW = W - 2 * MG, bodyW = Math.min(maxW, 860), cover = i === 0;
   var HS = (cover ? [156, 138, 122, 108, 96, 84, 74, 64, 56] : [124, 112, 100, 90, 80, 72, 64, 56]), BS = [46, 42, 38, 34, 30];
-  var ctaH = hasCta ? 96 : 0, regionH = region.y1 - region.y0, pick = null;
+  var ctaH = hasCta ? 96 : 0, regionH = region.y1 - region.y0, pick = null, defsOut = [], photoOut = '';
+  var phSize = P.photoSize, photoBlock = 0;
+  var vis = slide.vis || (slide.img ? 'photo' : 'none'), hasPhoto = vis === 'photo' && slide.img, emoji = vis === 'emoji' && slide.emoji ? String(slide.emoji).trim() : '';
+  if (hasPhoto || emoji){
+    if (regionH < phSize + 56 + 420) phSize = Math.max(180, regionH - 56 - 420);   // shrink the photo rather than squeeze the type
+    photoBlock = phSize + 56; regionH -= photoBlock;
+  }
   for (var a = 0; a < HS.length && !pick; a++){
     var hl = wrapText(head, HS[a], 600, maxW); if (hl.tooWide && a < HS.length - 1) continue;
     for (var b = 0; b < BS.length; b++){
@@ -930,10 +965,26 @@ function textArt(slide, i, N, W, region, color){
       if (hH + bH + cH <= regionH || (a === HS.length - 1 && b === BS.length - 1)){ pick = { hs: HS[a], bs: BS[b], hl: hl.lines, bl: bl.lines, hH: hH, bH: bH, cH: cH }; break; }
     }
   }
-  if (!pick) return '';
-  var total = pick.hH + pick.bH + pick.cH, y = region.y0;
-  if (P.vpos === 'middle') y = region.y0 + (regionH - total) / 2; else if (P.vpos === 'bottom') y = region.y1 - total;
+  if (!pick) return { body: '', defs: [] };
+  var total = pick.hH + pick.bH + pick.cH + photoBlock, y = region.y0;
+  if (P.vpos === 'middle') y = region.y0 + (regionH + photoBlock - total + photoBlock * 0 ) / 2 + 0; else if (P.vpos === 'bottom') y = region.y1 - total;
+  if (P.vpos === 'middle') y = region.y0 + ((region.y1 - region.y0) - total) / 2;
   var center = P.align === 'center', x = center ? W / 2 : MG, anchor = center ? 'middle' : 'start', out = '';
+  if (emoji){   // a big emoji above the text, acting as an icon
+    var es = Math.round(phSize * .9), ex = center ? W / 2 : MG - 6;
+    photoOut = '<text x="' + f(ex) + '" y="' + f(y + es * .82) + '" text-anchor="' + anchor + '" font-size="' + es + '" font-family="\'Apple Color Emoji\',\'Segoe UI Emoji\',\'Noto Color Emoji\',sans-serif">' + esc(emoji) + '</text>';
+    y += photoBlock;
+  }
+  if (hasPhoto){   // a small photo above the text: white border, rounded corners, a very slight tilt and a very soft shadow
+    var fw = phSize, fh = phSize, bw2 = Math.round(phSize * .05), tilt = (i % 2 ? -1 : 1) * (P.photoTilt === undefined ? 1.6 : P.photoTilt), id = 'ph' + i + '_' + (++uidCounter);
+    var fx = center ? (W - fw) / 2 : MG + 4, fy = y;
+    defsOut.push('<filter id="' + id + 's" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="14" stdDeviation="26" flood-color="#000" flood-opacity=".18"/></filter>' +
+      '<clipPath id="' + id + 'c"><rect x="' + f(fx + bw2) + '" y="' + f(fy + bw2) + '" width="' + f(fw - 2 * bw2) + '" height="' + f(fh - 2 * bw2) + '" rx="' + f(fw * .045) + '"/></clipPath>');
+    photoOut = '<g transform="rotate(' + tilt + ' ' + f(fx + fw / 2) + ' ' + f(fy + fh / 2) + ')">' +
+      '<rect x="' + f(fx) + '" y="' + f(fy) + '" width="' + f(fw) + '" height="' + f(fh) + '" rx="' + f(fw * .075) + '" fill="#fff" filter="url(#' + id + 's)"/>' +
+      '<image x="' + f(fx + bw2) + '" y="' + f(fy + bw2) + '" width="' + f(fw - 2 * bw2) + '" height="' + f(fh - 2 * bw2) + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + id + 'c)" href="' + slide.img + '" xlink:href="' + slide.img + '"/></g>';
+    y += photoBlock;
+  }
   var hFont = 'font-family="' + FAMILY + '" font-weight="600" font-size="' + pick.hs + '" letter-spacing="' + f(-pick.hs * .03) + '" style="font-variation-settings:\'opsz\' 96"';
   pick.hl.forEach(function(ln, n){ out += '<text x="' + f(x) + '" y="' + f(y + n * pick.hs * .9 + pick.hs * .78) + '" text-anchor="' + anchor + '" fill="' + color + '" ' + hFont + '>' + esc(ln) + '</text>'; });
   y += pick.hH;
@@ -950,14 +1001,15 @@ function textArt(slide, i, N, W, region, color){
       '<text x="' + f(px + 44) + '" y="' + f(y + ctaH / 2 + cs * .34) + '" fill="' + color + '" font-family="' + FAMILY + '" font-weight="600" font-size="' + cs + '">' + esc(label) + '</text>' +
       '<path d="M' + f(px + pw - 76) + ' ' + f(y + ctaH / 2) + 'h40m-14 -14l14 14l-14 14" fill="none" stroke="' + color + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
   }
-  return out;
+  return { body: photoOut + out, defs: defsOut };
 }
 
 /* One slide as SVG. size = output width in px (the artwork is laid out on a 1080-wide board and scaled). */
 function buildSlideSVG(i, opts){
   opts = opts || {};
   var d = postDims(), W = d.W, H = d.H, N = P.slides.length, uid = 'u' + (++uidCounter) + '_', color = logoColor();
-  var wide = P.bgMode === 'continuous' && N > 1, bg, defs = [], body = '', vbx = 0;
+  var wide = P.bgMode === 'continuous' && N > 1, bg, defs = [], body = '', vbx = 0, sl0 = P.slides[i];
+  if (sl0.bgImg && state.logoColor === 'auto') color = '#FFFFFF';
   var restore = state.bg;
   if (state.bg === 'transparent') state.bg = 'solid';   // an Instagram post always needs a backdrop
   if (wide){ bg = backgroundArt(W * N, H, uid, Math.sqrt(W * H)); vbx = i * W; }
@@ -966,6 +1018,10 @@ function buildSlideSVG(i, opts){
   state.bg = restore;
   defs = defs.concat(bg.defs); body += bg.body;
   if (restore === 'transparent' && !bg.body) body = '<rect width="' + W + '" height="' + H + '" fill="#fff"/>';
+  var vx0 = wide ? i * W : 0;
+  if (sl0.bgImg){   // this slide's own background photo, always with a 20% black layer over it
+    defs = []; body = '<image x="' + vx0 + '" y="0" width="' + W + '" height="' + H + '" preserveAspectRatio="xMidYMid slice" href="' + sl0.bgImg + '" xlink:href="' + sl0.bgImg + '"/><rect x="' + vx0 + '" width="' + W + '" height="' + H + '" fill="#000" fill-opacity=".2"/>';
+  } else if (restore === 'image'){ body += '<rect x="' + vx0 + '" width="' + W + '" height="' + H + '" fill="#000" fill-opacity=".2"/>'; }
   // layout: logo on one edge, slide counter + swipe cue on the opposite edge
   var pos = P.logoPos, showLogo = pos !== 'none' && (P.logoOn === 'all' || (P.logoOn === 'first' && i === 0) || (P.logoOn === 'last' && i === N - 1) || (P.logoOn === 'firstlast' && (i === 0 || i === N - 1)) || N === 1);
   var logoEdge = pos === 'none' ? 'top' : pos.split('-')[0], metaEdge = logoEdge === 'top' ? 'bottom' : 'top';
@@ -989,7 +1045,7 @@ function buildSlideSVG(i, opts){
         '<path d="M' + (W - MG - 64) + ' ' + (my - 12) + 'h64m-16 -16l16 16l-16 16" fill="none" stroke="' + color + '" stroke-opacity=".72" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
     }
   }
-  layer += textArt(P.slides[i], i, N, W, region, color);
+  var ta = textArt(P.slides[i], i, N, W, region, color); layer += ta.body; defs = defs.concat(ta.defs);
   var S = opts.size || d.W, outH = Math.round(S * H / W);
   var style = (opts.embed && fontB64) ? '<style>@font-face{font-family:BricolageEmbed;src:url(data:font/woff2;base64,' + fontB64 + ') format("woff2");font-weight:400 800;}</style>' : '';
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + S + '" height="' + outH + '" viewBox="' + vbx + ' 0 ' + W + ' ' + H + '"><defs>' + style + defs.join('') + '</defs>' +
@@ -1006,7 +1062,7 @@ function drawPost(){
   var img = $('prev'); img.onload = function(){ if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = url; };
   img.src = url; img.style.aspectRatio = out.W + ' / ' + out.H; img.dataset.ratio = out.W / out.H; fitPreview();
   var d = postDims();
-  $('metaText').textContent = (P.size) + ' × ' + Math.round(P.size * d.H / d.W) + ' px · ' + P.ratio + (N > 1 ? ' · slide ' + (P.cur + 1) + ' of ' + N : '') + (state.bg === 'pearl' || state.bg === 'refract' ? ' · seed ' + state.seed : '');
+  $('metaText').textContent = (P.size) + ' × ' + Math.round(P.size * d.H / d.W) + ' px · ' + P.ratio + (N > 1 ? ' · slide ' + (P.cur + 1) + ' of ' + N : '') + (state.bg === 'pearl' ? ' · ' + pal().name : state.bg === 'refract' ? ' · ' + rpal().name : '');
   clearTimeout(thumbTimer); thumbTimer = setTimeout(drawStrip, 220);
 }
 function drawStrip(){
@@ -1024,13 +1080,23 @@ function drawStrip(){
   }
 }
 
+
+var EMOJI_PICKS = ['🍕','🍔','🍺','🍷','☕','🥐','🍣','🌮','🍰','🎉','📍','✨','❤️','🔥','👀','🏆'];
+function visualHTML(sl, i){
+  var v = sl.vis || (sl.img ? 'photo' : 'none');
+  var seg = '<div class="seg vis" style="margin-top:2px">' + [['none', 'No image'], ['photo', 'Photo'], ['emoji', 'Emoji']].map(function(o){ return '<button type="button" data-vis="' + o[0] + '" aria-pressed="' + (v === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  if (v === 'photo') seg += '<div class="phrow" style="margin-top:8px"><button type="button" class="btn ghost sm" data-ph="add">' + (sl.img ? 'Change photo' : 'Add photo') + '</button>' + (sl.img ? '<img alt="" src="' + sl.img + '"><button type="button" class="btn ghost sm" data-ph="del">Remove</button>' : '') + '<input type="file" accept="image/*" hidden data-phfile data-i="' + i + '"></div>';
+  if (v === 'emoji') seg += '<input type="text" data-i="' + i + '" data-f="emoji" maxlength="12" placeholder="Type or paste an emoji (Ctrl+Cmd+Space on a Mac)" value="' + esc(sl.emoji || '').replace(/"/g, '&quot;') + '" style="margin-top:8px"><div class="emopick">' + EMOJI_PICKS.map(function(e){ return '<button type="button" data-emo="' + e + '">' + e + '</button>'; }).join('') + '</div>';
+  seg += '<div class="phrow" style="margin-top:10px"><span style="font-size:12px;color:var(--soft)">Background</span><button type="button" class="btn ghost sm" data-bgimg="add">' + (sl.bgImg ? 'Change image' : 'Add image') + '</button>' + (sl.bgImg ? '<img alt="" src="' + sl.bgImg + '"><button type="button" class="btn ghost sm" data-bgimg="del">Remove</button>' : '') + '<input type="file" accept="image/*" hidden data-bgfile data-i="' + i + '"></div>';
+  return seg;
+}
 /* ---- slide editor ---- */
 function buildSlides(){
   var N = P.slides.length, car = P.type === 'carousel', host = $('slides');
   host.innerHTML = P.slides.map(function(sl, i){
     return '<div class="slide' + (i === P.cur ? ' cur' : '') + '" data-i="' + i + '"><div class="hd"><b>' + (car ? 'Slide ' + (i + 1) : 'Text') + '</b><span class="sp"></span>' +
       (car ? '<button type="button" data-a="up" ' + (i === 0 ? 'disabled' : '') + ' title="Move earlier">↑</button><button type="button" data-a="down" ' + (i === N - 1 ? 'disabled' : '') + ' title="Move later">↓</button><button type="button" data-a="del" ' + (N <= 2 ? 'disabled' : '') + ' title="Remove">✕</button>' : '') +
-      '</div><label class="fl">Title<input type="text" data-i="' + i + '" data-f="h" spellcheck="true" placeholder="The big headline" value="' + esc(sl.h).replace(/"/g, '&quot;') + '"></label>' +
+      '</div>' + visualHTML(sl, i) + '<label class="fl">Title<input type="text" data-i="' + i + '" data-f="h" spellcheck="true" placeholder="The big headline" value="' + esc(sl.h).replace(/"/g, '&quot;') + '"></label>' +
       '<label class="fl">Short line<textarea data-i="' + i + '" data-f="b" spellcheck="true" placeholder="One short supporting line (optional)">' + esc(sl.b) + '</textarea></label></div>';
   }).join('');
   $('addSlide').disabled = N >= MAXSLIDES;
@@ -1097,15 +1163,34 @@ function wirePost(){
   $('postSize').addEventListener('change', function(e){ P.size = +e.target.value; render(); });
   $('bgMode').addEventListener('change', function(e){ P.bgMode = e.target.value; render(); });
   var host = $('slides');
+  host.addEventListener('change', function(e){
+    var fi = e.target.closest('input[type=file]'); if (!fi || !fi.files[0]) return; var i = +fi.dataset.i, file = fi.files[0], isBg = fi.hasAttribute('data-bgfile'), url = URL.createObjectURL(file), im = new Image();
+    im.onload = function(){   // shrink big phone photos so the preview and exports stay fast
+      var max = isBg ? 1600 : 1000, m = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * m); c.height = Math.round(im.height * m);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      var data = c.toDataURL('image/jpeg', .86);
+      if (isBg) P.slides[i].bgImg = data; else { P.slides[i].img = data; P.slides[i].vis = 'photo'; }
+      P.cur = i; buildSlides(); render();
+    };
+    im.onerror = function(){ URL.revokeObjectURL(url); alert('Could not read that image.'); }; im.src = url;
+  });
   host.addEventListener('input', function(e){ var el = e.target.closest('[data-f]'); if (!el) return; P.slides[+el.dataset.i][el.dataset.f] = el.value; render(); });
   host.addEventListener('focusin', function(e){ var c = e.target.closest('.slide'); if (!c) return; var i = +c.dataset.i; if (i !== P.cur){ P.cur = i; Array.prototype.forEach.call(host.children, function(el, k){ el.classList.toggle('cur', k === i); }); render(); } });
   host.addEventListener('click', function(e){
+    var vb = e.target.closest('button[data-vis]'), eb = e.target.closest('button[data-emo]');
+    if (vb){ var ci = +vb.closest('.slide').dataset.i; P.slides[ci].vis = vb.dataset.vis; P.cur = ci; buildSlides(); render(); return; }
+    if (eb){ var ei = +eb.closest('.slide').dataset.i; P.slides[ei].emoji = eb.dataset.emo; P.cur = ei; buildSlides(); render(); return; }
+    var bi = e.target.closest('button[data-bgimg]');
+    if (bi){ var bc = bi.closest('.slide'), bn = +bc.dataset.i; if (bi.dataset.bgimg === 'add') bc.querySelector('input[data-bgfile]').click(); else { delete P.slides[bn].bgImg; buildSlides(); render(); } return; }
+    var ph = e.target.closest('button[data-ph]');
+    if (ph){ var card = ph.closest('.slide'), i = +card.dataset.i; if (ph.dataset.ph === 'add') card.querySelector('input[data-phfile]').click(); else { delete P.slides[i].img; buildSlides(); render(); } return; }
     var b = e.target.closest('button[data-a]'); if (!b || b.disabled) return; var c = b.closest('.slide'), i = +c.dataset.i, a = b.dataset.a, arr = P.slides;
     if (a === 'del'){ arr.splice(i, 1); P.cur = Math.min(P.cur, arr.length - 1); }
     else { var j = a === 'up' ? i - 1 : i + 1; var t = arr[i]; arr[i] = arr[j]; arr[j] = t; P.cur = j; }
     buildSlides(); render();
   });
   $('addSlide').addEventListener('click', function(){ if (P.slides.length >= MAXSLIDES) return; P.slides.splice(P.cur + 1, 0, starter(1)); P.cur++; buildSlides(); render(); });
+  $('photoSize').addEventListener('input', function(e){ P.photoSize = +e.target.value; render(); });
   $('pAlign').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.align = b.dataset.v; render(); } });
   $('pVpos').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.vpos = b.dataset.v; render(); } });
   $('pNumbers').addEventListener('change', function(e){ P.numbers = e.target.checked; render(); });
@@ -1122,7 +1207,7 @@ function wirePost(){
 function syncPost(){
   setPressed($('postType'), 'data-v', P.type); setPressed($('pAlign'), 'data-v', P.align); setPressed($('pVpos'), 'data-v', P.vpos);
   setPressed($('logoPosTop'), 'data-v', P.logoPos); setPressed($('logoPosBot'), 'data-v', P.logoPos); $('logoOff').setAttribute('aria-pressed', P.logoPos === 'none' ? 'true' : 'false');
-  $('postRatio').value = P.ratio; $('postSize').value = P.size; $('bgMode').value = P.bgMode; $('logoOn').value = P.logoOn; $('logoSize').value = Math.round(P.logoSize * 100);
+  $('photoSize').value = P.photoSize; $('postRatio').value = P.ratio; $('postSize').value = P.size; $('bgMode').value = P.bgMode; $('logoOn').value = P.logoOn; $('logoSize').value = Math.round(P.logoSize * 100);
   $('logoOnWrap').classList.toggle('hidden', P.type !== 'carousel' || P.logoPos === 'none');
   paintRanges();
 }
@@ -1150,6 +1235,9 @@ function wire(){
 
   $('palette').innerHTML = PAL_KEYS.map(function(k){ return '<option value="' + k + '">' + PALETTES[k].name + '</option>'; }).join('');
   $('palette').addEventListener('change', function(e){ state.palette = e.target.value; render(); });
+  $('pearlColors').addEventListener('input', function(e){ var el = e.target.closest('.pc'); if (!el) return; pearlToCustom(); state.pcustom.colors[+el.dataset.i] = el.value; render(); });
+  $('pBase').addEventListener('input', function(e){ pearlToCustom(); state.pcustom.base = e.target.value; render(); });
+
   $('rpalette').innerHTML = RPAL_KEYS.map(function(k){ return '<option value="' + k + '">' + RPALETTES[k].name + '</option>'; }).join('');
   $('rpalette').addEventListener('change', function(e){ state.rpalette = e.target.value; render(); });
   $('layers').addEventListener('input', function(e){ state.layers = +e.target.value; render(); });
@@ -1164,7 +1252,6 @@ function wire(){
   $('rand').addEventListener('click', randomise);
   $('prevSeed').addEventListener('click', function(){ if (histIdx > 0){ histIdx--; state.seed = history[histIdx]; render(); } });
   $('nextSeed').addEventListener('click', function(){ if (histIdx < history.length - 1){ histIdx++; state.seed = history[histIdx]; render(); } });
-  $('seed').addEventListener('change', function(e){ var n = parseInt(e.target.value, 10); if (n > 0){ setSeed(n, true); render(); } });
   $('meshSize').addEventListener('input', function(e){ state.meshSize = e.target.value / 100; render(); });
   $('mesh').addEventListener('change', function(e){ state.mesh = e.target.value; render(); });
   $('sat').addEventListener('input', function(e){ state.sat = e.target.value / 100; render(); });

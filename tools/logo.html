@@ -91,7 +91,9 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
 .slide .hd b{color:var(--ink)}
 .slide .hd .sp{flex:1}
 .slide .hd button{font:inherit;font-size:12px;border:0;background:#fff;border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--soft)}
-.slide textarea{width:100%;min-height:78px;resize:vertical;font:inherit;font-size:14px;line-height:1.35;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;color:var(--ink)}
+.slide .fl{display:flex;flex-direction:column;gap:3px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.slide input[type=text]{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;color:var(--ink);text-transform:none;letter-spacing:0}
+.slide textarea{width:100%;min-height:56px;resize:vertical;font:inherit;font-size:14px;line-height:1.35;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;color:var(--ink)}
 .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:10px}
 .pos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 .pos button{font:inherit;font-size:12px;border:1.5px solid var(--line);background:var(--chip);border-radius:8px;padding:8px 4px;cursor:pointer;color:var(--soft)}
@@ -157,7 +159,7 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
       <h2>Text</h2>
       <div id="slides"></div>
       <div class="row" id="slideBtns"><button class="btn ghost sm" id="addSlide" type="button">+ Add slide</button></div>
-      <p class="hint">First line = headline (big). Anything after it = body copy. Keep to one idea per slide, a few lines of body at most, and make the last slide a call to action.</p>
+      <p class="hint">The title is the big headline; the short line sits underneath it. Keep to one idea per slide, and make the last slide a call to action.</p>
       <div class="row" style="margin-top:14px">
         <div style="flex:1;min-width:120px"><span style="font-size:12px;color:var(--soft)">Alignment</span>
           <div class="seg" id="pAlign" style="margin-top:6px"><button type="button" data-v="left" aria-pressed="true">Left</button><button type="button" data-v="center" aria-pressed="false">Centre</button></div></div>
@@ -269,9 +271,9 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
           </label>
         </div>
         <div class="row hidden" id="rcustomRow">
-          <label class="f" style="flex-direction:row;align-items:center;gap:6px;min-width:0;flex:0 0 auto">Background <input type="color" id="rcBg" value="#f9c7fb"></label>
-          <label class="f" style="flex-direction:row;align-items:center;gap:6px;min-width:0;flex:0 0 auto">Light <input type="color" id="rcLight" value="#6aa8ff"></label>
-          <label class="f" style="flex-direction:row;align-items:center;gap:6px;min-width:0;flex:0 0 auto">Dark <input type="color" id="rcDark" value="#1a0c33"></label>
+          <label class="f" style="flex-direction:row;align-items:center;gap:6px;min-width:0;flex:0 0 auto">Background <input type="color" id="rcBg" value="#ffd2b0"></label>
+          <label class="f" style="flex-direction:row;align-items:center;gap:6px;min-width:0;flex:0 0 auto">Light <input type="color" id="rcLight" value="#ff5514"></label>
+          <label class="f" style="flex-direction:row;align-items:center;gap:6px;min-width:0;flex:0 0 auto">Dark <input type="color" id="rcDark" value="#2f3cff"></label>
         </div>
         <div class="row">
           <label class="f">Refractions <input type="range" id="layers" min="0" max="20" value="7"></label>
@@ -381,21 +383,16 @@ function anchorOrange(cols){
 var PAL_KEYS = Object.keys(PALETTES);
 /* Refracted gradients: stacked curved layers, each lighter at its edge and darker across its width. ramp goes light -> dark. */
 var RPALETTES = {
-  pinkblue: { name:'Pink & blue',  bg:'#f9c7fb', logo:'#FFFFFF', ramp:['#cdbdfb','#6aa8ff','#2b7de9','#1d4fc4','#17287a','#1a0c33'] },
-  sunset:   { name:'Sunset',       bg:'#ffd9c2', logo:'#FFFFFF', ramp:['#ffb199','#ff6a3d','#e8330f','#a3162a','#4a0f3a','#1c0620'] },
-  orange:   { name:'Orange',       bg:'#ffc9a8', logo:'#FFFFFF', ramp:['#ffa56b','#ff5514','#d12d0c','#7a1408','#330a05','#140403'] },
-  violet:   { name:'Violet',       bg:'#e9d9ff', logo:'#FFFFFF', ramp:['#d0b3ff','#9a6bff','#6a3be8','#4220a8','#220f5e','#0e0626'] },
-  aqua:     { name:'Aqua',         bg:'#d9fff3', logo:'#FFFFFF', ramp:['#9ef0d8','#27c9b4','#0e8fa0','#0f5b8c','#0b2d5c','#06122e'] },
-  peach:    { name:'Peach',        bg:'#ffe3d6', logo:'#FFFFFF', ramp:['#ffc7b0','#ff9a8a','#ff5f6d','#c42b5a','#5e1a55','#1d0a2e'] },
-  mint:     { name:'Mint',         bg:'#e6fff4', logo:'#FFFFFF', ramp:['#b5f5dc','#5fe0b0','#1fb58a','#0d7a6a','#0a4150','#071a2c'] },
-  ocean:    { name:'Ocean',        bg:'#dff3ff', logo:'#FFFFFF', ramp:['#a9dcff','#3fa9ff','#1670e0','#0d44a8','#0a2468','#050d2a'] },
-  berry:    { name:'Berry',        bg:'#ffd6ec', logo:'#FFFFFF', ramp:['#ff9ad0','#ff4fa3','#d41f86','#8a1170','#3d0a4f','#14061f'] },
-  gold:     { name:'Gold',         bg:'#fff3c9', logo:'#232323', ramp:['#ffe28a','#ffc21a','#f08a0a','#b8500a','#5c2a0c','#1f0f06'] },
-  night:    { name:'Night',        bg:'#cfd6ff', logo:'#FFFFFF', ramp:['#a5b4ff','#6a7cff','#3b46d6','#23258f','#121552','#07082a'] },
-  glass:    { name:'Studio glass',  bg:'#eef3f7', logo:'#232323', rim:'#141414', fringe:['#1f72d8','#ff4f3d','#ff9a1f'], ramp:['#f4f4f5','#f1f1f2','#eeeeef','#ebebec','#e8e8ea','#e4e4e7'] },
-  mono:     { name:'Mono',         bg:'#ececf0', logo:'#FFFFFF', ramp:['#cfd0d6','#9a9ca8','#62646f','#373943','#1c1d24','#0b0b10'] }
+  orangeblue:   { name:'Orange & blue',   bg:'#ffd2b0', logo:'#FFFFFF', ramp:['#ffcaa0','#ff8a1f','#FF5514','#2f3cff','#1f4fc4','#06122a'] },
+  orangeteal:   { name:'Orange & teal',   bg:'#ffd8bd', logo:'#FFFFFF', ramp:['#ffcfa8','#ff8a1f','#FF5514','#0d8fa0','#0a5f78','#04242a'] },
+  orangeviolet: { name:'Orange & violet', bg:'#ffd3c2', logo:'#FFFFFF', ramp:['#ffc2a0','#ff8a1f','#FF5514','#ff2bd6','#7a3dff','#16062e'] },
+  orangepink:   { name:'Orange & pink',   bg:'#ffd6cc', logo:'#FFFFFF', ramp:['#ffc9a8','#ff8a1f','#FF5514','#ff2d7a','#b02a8a','#2a0716'] },
+  sunset:       { name:'Sunset',          bg:'#ffdcc2', logo:'#FFFFFF', ramp:['#ffd18a','#ffa31a','#FF5514','#e8200f','#8c1020','#2a0a05'] },
+  orange:       { name:'Orange',          bg:'#ffc9a8', logo:'#FFFFFF', ramp:['#ffa56b','#ff5514','#d12d0c','#7a1408','#330a05','#140403'] },
+  cream:        { name:'Cream (light)',   bg:'#fff3ea', logo:'#232323', ramp:['#fff1e4','#ffd6bd','#ffb08a','#ff8a5a','#FF5514','#e8480f'] },
+  glass:        { name:'Studio glass',    bg:'#eef3f7', logo:'#232323', rim:'#141414', fringe:['#1f72d8','#ff4f3d','#ff9a1f'], ramp:['#f4f4f5','#f1f1f2','#eeeeef','#ebebec','#e8e8ea','#e4e4e7'] }
 };
-RPALETTES.custom = { name:'Custom colours', bg:'#f9c7fb', logo:'#FFFFFF', ramp:[] };
+RPALETTES.custom = { name:'Custom colours', bg:'#ffd2b0', logo:'#FFFFFF', ramp:[] };
 var RPAL_KEYS = Object.keys(RPALETTES);
 var SOLIDS = [['#FFFFFF','White'],['#F3F2EE','Cream'],['#232323','Ink'],['#000000','Black'],['#FF5514','Orange']];
 var LOGO_COLORS = [['#232323','Ink'],['#000000','Black'],['#FFFFFF','White'],['#F3F2EE','Cream'],['#FF5514','Orange']];
@@ -403,14 +400,14 @@ var LOGO_COLORS = [['#232323','Ink'],['#000000','Black'],['#FFFFFF','White'],['#
 var state = {
   variant: 'wordmark', dropStyle: 'solid', logoColor: 'auto', customLogo: '#232323',
   bg: 'pearl', solid: '#232323', customSolid: '#232323',
-  seed: 482913, palette: 'orangeblue', rpalette: 'pinkblue', glass: 0, mesh: 'circles', meshSize: 1, layers: 7, line: { dx1: 0, y1: .3, dx2: -.16, y2: .7 }, soft: 0, grain: .4, rcustom: { bg: '#f9c7fb', light: '#6aa8ff', dark: '#1a0c33' }, randPal: true, core: 0, sat: 1.9,
+  seed: 482913, palette: 'orangeblue', rpalette: 'orangeblue', glass: 0, mesh: 'circles', meshSize: 1, layers: 7, line: { dx1: 0, y1: .3, dx2: -.16, y2: .7 }, soft: 0, grain: .4, rcustom: { bg: '#ffd2b0', light: '#ff5514', dark: '#2f3cff' }, randPal: true, core: 0, sat: 1.9,
   image: null, imageName: '', dim: 0,
   shape: '1:1', size: 2000, pad: .14, backdrop: 'checker', scale: 1, ox: 0, oy: 0
 };
 state.mode = 'logo';
 state.post = {
   type: 'single', ratio: '4:5', size: 1080, bgMode: 'continuous', cur: 0,
-  slides: [{ t: 'Headline that stops the scroll\nOne short line that earns the swipe' }],
+  slides: [{ h: 'Headline that stops the scroll', b: 'One short line that earns the swipe' }],
   align: 'left', vpos: 'middle', numbers: true, cue: true, cta: 'Follow @leamingtondrop',
   logoPos: 'top-left', logoOn: 'all', logoSize: .2
 };
@@ -883,10 +880,11 @@ function exportSVG(){
 /* ------------------------------------------------------------------ Instagram post mode */
 var P = state.post, MAXSLIDES = 10, MG = 96;
 var STARTERS = [
-  'Headline that stops the scroll\nOne short line that earns the swipe',
-  'One idea per slide\nKeep the body copy to a few short lines so it reads easily on a phone.',
-  'Make the last slide count\nTell people exactly what to do next: follow, save, share or visit.'
+  { h: 'Headline that stops the scroll', b: 'One short line that earns the swipe' },
+  { h: 'One idea per slide', b: 'Keep the body copy to a few short lines so it reads easily on a phone.' },
+  { h: 'Make the last slide count', b: 'Tell people exactly what to do next: follow, save, share or visit.' }
 ];
+function starter(n){ var o = STARTERS[n] || STARTERS[1]; return { h: o.h, b: o.b }; }
 function postDims(){
   var r = P.ratio === '1:1' ? [1, 1] : P.ratio === '3:4' ? [3, 4] : [4, 5];
   return { W: 1080, H: Math.round(1080 * r[1] / r[0]) };
@@ -911,9 +909,7 @@ function esc(t){ return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').r
 
 /* Lays the slide's text out inside the free region and returns the SVG for it. */
 function textArt(slide, i, N, W, region, color){
-  var parts = String(slide.t || '').replace(/\r/g, '').split('\n'), hi = -1, k;
-  for (k = 0; k < parts.length; k++){ if (parts[k].trim()){ hi = k; break; } }
-  var head = hi < 0 ? '' : parts[hi].trim(), body = hi < 0 ? '' : parts.slice(hi + 1).join('\n').replace(/^\n+|\n+$/g, '');
+  var head = String(slide.h || '').trim(), body = String(slide.b || '').trim();
   var last = N > 1 && i === N - 1, hasCta = last && P.cta && P.cta.trim();
   var maxW = W - 2 * MG, bodyW = Math.min(maxW, 860), cover = i === 0;
   var HS = (cover ? [156, 138, 122, 108, 96, 84, 74, 64, 56] : [124, 112, 100, 90, 80, 72, 64, 56]), BS = [46, 42, 38, 34, 30];
@@ -1026,7 +1022,8 @@ function buildSlides(){
   host.innerHTML = P.slides.map(function(sl, i){
     return '<div class="slide' + (i === P.cur ? ' cur' : '') + '" data-i="' + i + '"><div class="hd"><b>' + (car ? 'Slide ' + (i + 1) : 'Text') + '</b><span class="sp"></span>' +
       (car ? '<button type="button" data-a="up" ' + (i === 0 ? 'disabled' : '') + ' title="Move earlier">↑</button><button type="button" data-a="down" ' + (i === N - 1 ? 'disabled' : '') + ' title="Move later">↓</button><button type="button" data-a="del" ' + (N <= 2 ? 'disabled' : '') + ' title="Remove">✕</button>' : '') +
-      '</div><textarea data-i="' + i + '" spellcheck="true" placeholder="Headline on the first line, body copy below">' + esc(sl.t) + '</textarea></div>';
+      '</div><label class="fl">Title<input type="text" data-i="' + i + '" data-f="h" spellcheck="true" placeholder="The big headline" value="' + esc(sl.h).replace(/"/g, '&quot;') + '"></label>' +
+      '<label class="fl">Short line<textarea data-i="' + i + '" data-f="b" spellcheck="true" placeholder="One short supporting line (optional)">' + esc(sl.b) + '</textarea></label></div>';
   }).join('');
   $('addSlide').disabled = N >= MAXSLIDES;
   $('slideBtns').classList.toggle('hidden', !car);
@@ -1037,7 +1034,7 @@ function buildSlides(){
 }
 function setType(t){
   P.type = t;
-  if (t === 'carousel'){ while (P.slides.length < 3) P.slides.push({ t: STARTERS[P.slides.length] || STARTERS[1] }); }
+  if (t === 'carousel'){ while (P.slides.length < 3) P.slides.push(starter(P.slides.length)); }
   else { P.slides = [P.slides[Math.min(P.cur, P.slides.length - 1)] || P.slides[0]]; P.cur = 0; }
   buildSlides(); render();
 }
@@ -1092,7 +1089,7 @@ function wirePost(){
   $('postSize').addEventListener('change', function(e){ P.size = +e.target.value; render(); });
   $('bgMode').addEventListener('change', function(e){ P.bgMode = e.target.value; render(); });
   var host = $('slides');
-  host.addEventListener('input', function(e){ var ta = e.target.closest('textarea'); if (!ta) return; P.slides[+ta.dataset.i].t = ta.value; render(); });
+  host.addEventListener('input', function(e){ var el = e.target.closest('[data-f]'); if (!el) return; P.slides[+el.dataset.i][el.dataset.f] = el.value; render(); });
   host.addEventListener('focusin', function(e){ var c = e.target.closest('.slide'); if (!c) return; var i = +c.dataset.i; if (i !== P.cur){ P.cur = i; Array.prototype.forEach.call(host.children, function(el, k){ el.classList.toggle('cur', k === i); }); render(); } });
   host.addEventListener('click', function(e){
     var b = e.target.closest('button[data-a]'); if (!b || b.disabled) return; var c = b.closest('.slide'), i = +c.dataset.i, a = b.dataset.a, arr = P.slides;
@@ -1100,7 +1097,7 @@ function wirePost(){
     else { var j = a === 'up' ? i - 1 : i + 1; var t = arr[i]; arr[i] = arr[j]; arr[j] = t; P.cur = j; }
     buildSlides(); render();
   });
-  $('addSlide').addEventListener('click', function(){ if (P.slides.length >= MAXSLIDES) return; P.slides.splice(P.cur + 1, 0, { t: STARTERS[1] }); P.cur++; buildSlides(); render(); });
+  $('addSlide').addEventListener('click', function(){ if (P.slides.length >= MAXSLIDES) return; P.slides.splice(P.cur + 1, 0, starter(1)); P.cur++; buildSlides(); render(); });
   $('pAlign').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.align = b.dataset.v; render(); } });
   $('pVpos').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.vpos = b.dataset.v; render(); } });
   $('pNumbers').addEventListener('change', function(e){ P.numbers = e.target.checked; render(); });

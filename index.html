@@ -305,6 +305,16 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 @media (max-width:720px){.map-actions{width:min(263px,calc(100vw - 2 * var(--gutter,16px)));max-width:none}.map-actions .drop-more{flex:1 1 auto;justify-content:center;min-width:0}}   /* same width as desktop (205px button + 48px circle), shrinking only on very narrow screens */
 .drop-filter{position:relative;width:48px;min-width:48px;height:48px;padding:0!important;display:grid;place-items:center;border-radius:50%!important;corner-shape:round}
 .drop-filter svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+/* the icon morphs while the popover is open: the sliders collapse, then a cross (nothing changed) or a tick (filters set) draws itself in; cross <-> tick swap by un-drawing one and drawing the other */
+.drop-filter svg g{transform-origin:12px 12px}
+.drop-filter .ic-f{transition:opacity .2s ease .05s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+.drop-filter.is-open .ic-f{opacity:0;transform:rotate(90deg) scale(.3);transition-delay:0s}
+.drop-filter .ic-x path,.drop-filter .ic-t path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .18s ease-in}
+.drop-filter.is-open:not(.on) .ic-x path,.drop-filter.is-open.on .ic-t path{stroke-dashoffset:0;transition:stroke-dashoffset .34s cubic-bezier(.22,1,.36,1) .16s}
+.drop-filter.is-open:not(.on) .ic-x path:nth-child(2){transition-delay:.26s}
+.drop-filter.is-open.on::after{opacity:0}
+.map-actions .drop-filter.is-open.on{background:#FF5514;color:#000}
+.map-actions .drop-filter.is-open.on:hover{background:#FF7440}
 .drop-filter.on::after{content:"";position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:#FF5514;box-shadow:0 0 0 3px #000;corner-shape:round}
 .drop-filter.on:hover::after{background:#F3F2EE}
 /* filter popover: same black panel as the crayon picker, opening upward from the button */
@@ -607,7 +617,7 @@ html.loading{overflow:hidden}
       <div class="pins" role="list" aria-label="Some of our favourite bars and restaurants"></div>
       <div class="map-actions">
         <button class="btn drop-more" type="button"><svg viewBox="0 0 22 28" aria-hidden="true" style="width:14px;height:18px;fill:currentColor;stroke:none"><path d="M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z"/></svg><span class="t">Try another drop</span></button>
-        <button class="btn drop-filter" id="fpOpen" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter places"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+        <button class="btn drop-filter" id="fpOpen" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Filter places"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="ic-f"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></g><g class="ic-x"><path pathLength="1" d="M6.5 6.5l11 11"/><path pathLength="1" d="M17.5 6.5l-11 11"/></g><g class="ic-t"><path pathLength="1" d="M5.5 12.5l4.2 4.2L18.5 7.8"/></g></svg></button>
       </div>
       <section class="drop">
         <h2 aria-label="Drop it like it’s hot"><span class="say say-drop" aria-hidden="true">Drop it like it’s hot</span><span class="say say-keep" aria-hidden="true">Keep scrolling</span><span class="say say-rain" aria-hidden="true">Make it rain</span></h2>
@@ -1022,8 +1032,9 @@ html.loading{overflow:hidden}
     fSelT.textContent = !filt.tags.length ? 'All tags' : filt.tags.length <= 2 ? filt.tags.join(', ') : filt.tags.length + ' tags';
     [].forEach.call(fOpts.querySelectorAll('.fp-opt'), function(b){ b.classList.toggle('on', filt.tags.indexOf(b.dataset.t) >= 0); });
     var m = POOL.filter(matches).length; fCount.textContent = m + (m === 1 ? ' place matches' : ' places match');
-    fBtn.classList.toggle('on', filt.n !== COUNT || filt.tags.length > 0 || filt.minR > 0);
+    fBtn.classList.toggle('on', filt.n !== COUNT || filt.tags.length > 0 || filt.minR > 0); fLabel();
   }
+  function fLabel(){ fBtn.setAttribute('aria-label', !fPop.classList.contains('open') ? 'Filter places' : fBtn.classList.contains('on') ? 'Confirm filters' : 'Close filters'); }
   function reland(){ clearTimeout(fTimer); fTimer = setTimeout(function(){ if (landed){ unland(); land(); } }, 320); }   // re-drop the pins with the new filter
   // changing the amount doesn't start over: it drops in the extra places, or fades out the newest ones
   function adjust(){
@@ -1066,7 +1077,7 @@ html.loading{overflow:hidden}
   }
   function setF(on){
     if (on){ buildOpts(); fRender(); placeF(); }
-    fPop.classList.toggle('open', on); fPop.setAttribute('aria-hidden', on ? 'false' : 'true'); fBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+    fPop.classList.toggle('open', on); fPop.setAttribute('aria-hidden', on ? 'false' : 'true'); fBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); fBtn.classList.toggle('is-open', on); fLabel();
     if (!on){ fList.classList.remove('open'); fSel.setAttribute('aria-expanded', 'false'); fRList.classList.remove('open'); fRSel.setAttribute('aria-expanded', 'false'); }
   }
   function closeF(){ if (fPop.classList.contains('open')) setF(false); }

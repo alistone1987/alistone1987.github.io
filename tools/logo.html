@@ -158,7 +158,7 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
           <option value="continuous">Continuous (flows across slides)</option>
           <option value="vary">Different on each slide</option>
         </select></label></div>
-      <div class="tipbox" id="postTip">Instagram carousels hold up to 10 slides. 4:5 is the tallest feed size that isn't cropped, and the side margins keep text clear of the profile-grid crop.</div>
+      <div class="tipbox" id="postTip">Instagram carousels hold up to 10 slides. 4:5 is the tallest feed size that isn't cropped. The logo, numbers and swipe cue stay inside the area that the profile grid shows (about 12% in from the top and bottom), so they are never cut off.</div>
     </section>
 
     <section class="post-only">
@@ -203,7 +203,9 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
         <button class="btn accent" id="dlSlide" type="button">Download this slide</button>
         <button class="btn" id="dlZip" type="button">Download all (ZIP)</button>
       </div>
-      <p class="hint" id="exportHint">PNG at Instagram's native size. In a ZIP the slides are numbered in order, ready to upload as a carousel.</p>
+      <div class="row"><label class="f">File type
+        <select id="postFmt"><option value="jpg" selected>JPG: Instagram-ready (smaller)</option><option value="png">PNG: lossless (larger)</option></select></label></div>
+      <p class="hint" id="exportHint">Every slide is exported at exactly the same size.</p>
     </section>
 
     <section>
@@ -1031,20 +1033,23 @@ function buildSlideSVG(i, opts){
   // layout: logo on one edge, slide counter + swipe cue on the opposite edge
   var pos = P.logoPos, showLogo = pos !== 'none' && (P.logoOn === 'all' || (P.logoOn === 'first' && i === 0) || (P.logoOn === 'last' && i === N - 1) || (P.logoOn === 'firstlast' && (i === 0 || i === N - 1)) || N === 1);
   var logoEdge = pos === 'none' ? 'top' : pos.split('-')[0], metaEdge = logoEdge === 'top' ? 'bottom' : 'top';
-  var wantMeta = N > 1 && (P.numbers || P.cue), reserve = 132;
-  var region = { y0: MG, y1: H - MG };
-  if (showLogo || (logoEdge === 'top' && pos !== 'none')){ if (logoEdge === 'top') region.y0 = MG + reserve; else region.y1 = H - MG - reserve; }
-  if (wantMeta){ if (metaEdge === 'top') region.y0 = Math.max(region.y0, MG + reserve); else region.y1 = Math.min(region.y1, H - MG - reserve); }
+  // Instagram crops posts in places: the profile grid shows the middle 1:1 square of a portrait post (about 10% off the top and bottom), and the 3:4 grid trims the sides a little.
+  // So the logo, the counter and the swipe cue sit inside that safe area: EV from the top and bottom edge, MG from the sides.
+  var EV = P.ratio === '1:1' ? MG : Math.round(H * .115);
+  var wantMeta = N > 1 && (P.numbers || P.cue), reserve = 112;
+  var region = { y0: EV, y1: H - EV };
+  if (showLogo || (logoEdge === 'top' && pos !== 'none')){ if (logoEdge === 'top') region.y0 = EV + reserve; else region.y1 = H - EV - reserve; }
+  if (wantMeta){ if (metaEdge === 'top') region.y0 = Math.max(region.y0, EV + reserve); else region.y1 = Math.min(region.y1, H - EV - reserve); }
   var layer = '';
   if (showLogo){
     var art = logoArt(state.variant, color, uid), cw = art.bbox.x1 - art.bbox.x0, ch = art.bbox.y1 - art.bbox.y0;
     var targetW = P.logoSize * W * (state.variant === 'drop' ? .5 : state.variant === 'split' ? .72 : 1), sc = targetW / cw, lw = cw * sc, lh = ch * sc;
-    var lx = pos.indexOf('left') > -1 ? MG : pos.indexOf('right') > -1 ? W - MG - lw : (W - lw) / 2, ly = logoEdge === 'top' ? MG : H - MG - lh;
+    var lx = pos.indexOf('left') > -1 ? MG : pos.indexOf('right') > -1 ? W - MG - lw : (W - lw) / 2, ly = logoEdge === 'top' ? EV : H - EV - lh;
     layer += '<g transform="translate(' + f(lx - art.bbox.x0 * sc) + ' ' + f(ly - art.bbox.y0 * sc) + ') scale(' + sc.toFixed(6) + ')">' + art.body + '</g>';
     defs = defs.concat(art.defs);
   }
   if (wantMeta){
-    var my = metaEdge === 'top' ? MG + 30 : H - MG - 4, mf = 'font-family="' + FAMILY + '" font-weight="500" font-size="34" fill="' + color + '" fill-opacity=".72"';
+    var my = metaEdge === 'top' ? EV + 30 : H - EV - 4, mf = 'font-family="' + FAMILY + '" font-weight="500" font-size="34" fill="' + color + '" fill-opacity=".72"';
     if (P.numbers) layer += '<text x="' + MG + '" y="' + my + '" ' + mf + ' letter-spacing="1">' + String(i + 1).padStart(2, '0') + ' / ' + String(N).padStart(2, '0') + '</text>';
     if (P.cue && i < N - 1){
       layer += '<text x="' + (W - MG - 78) + '" y="' + my + '" text-anchor="end" ' + mf + '>Swipe</text>' +
@@ -1110,7 +1115,7 @@ function buildSlides(){
   $('carouselOpts').classList.toggle('hidden', !car);
   $('bgModeRow').classList.toggle('hidden', !car);
   $('dlZip').classList.toggle('hidden', !car);
-  $('exportHint').textContent = car ? 'PNG at Instagram\'s size. The ZIP has every slide numbered in order, ready to upload as a carousel.' : 'PNG at Instagram\'s native size.';
+  $('exportHint').textContent = (car ? 'Every slide is exported at exactly the same size and numbered in order, ready to upload as a carousel. ' : '') + 'JPG at 1080 px wide in sRGB is the format Instagram recommends, and keeps each file well under its size limit.';
 }
 function setType(t){
   var was = P.type; P.type = t;
@@ -1138,21 +1143,27 @@ function makeZip(files){   // store-only ZIP, no library needed
   end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cs, true); end.setUint32(16, offset, true);
   return new Blob(chunks.concat(central, [new Uint8Array(end.buffer)]), { type: 'application/zip' });
 }
-function slidePNG(i){
+function slideImage(i){   // every slide is rendered at exactly the same pixel size, as sRGB
+  var fmt = $('postFmt').value;
   return new Promise(function(resolve, reject){
     var o = buildSlideSVG(i, { embed: true, size: P.size }), url = URL.createObjectURL(new Blob([o.svg], { type: 'image/svg+xml' })), img = new Image();
-    img.onload = function(){ var c = document.createElement('canvas'); c.width = o.W; c.height = o.H; c.getContext('2d').drawImage(img, 0, 0, o.W, o.H); c.toBlob(function(b){ URL.revokeObjectURL(url); b ? resolve(b) : reject(); }, 'image/png'); };
+    img.onload = function(){
+      var c = document.createElement('canvas'); c.width = o.W; c.height = o.H; var x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, o.W, o.H); x.drawImage(img, 0, 0, o.W, o.H);   // flat white underneath: JPG has no transparency
+      c.toBlob(function(b){ URL.revokeObjectURL(url); b ? resolve(b) : reject(); }, fmt === 'png' ? 'image/png' : 'image/jpeg', fmt === 'png' ? undefined : .92);
+    };
     img.onerror = function(){ URL.revokeObjectURL(url); reject(); }; img.src = url;
   });
 }
+function ext(){ return $('postFmt').value === 'png' ? '.png' : '.jpg'; }
 function postBase(){ return 'leamdrop-post'; }
-function exportSlide(){ slidePNG(P.cur).then(function(b){ download(b, postBase() + '-' + String(P.cur + 1).padStart(2, '0') + '.png'); }, function(){ alert('Could not render the PNG.'); }); }
+function exportSlide(){ slideImage(P.cur).then(function(b){ download(b, postBase() + '-' + String(P.cur + 1).padStart(2, '0') + ext()); }, function(){ alert('Could not render the image.'); }); }
 function exportZip(){
   var N = P.slides.length, files = [], btn = $('dlZip'), label = btn.textContent; btn.disabled = true;
   (function next(i){
     if (i >= N){ download(makeZip(files), postBase() + '-carousel.zip'); btn.disabled = false; btn.textContent = label; return; }
     btn.textContent = 'Rendering ' + (i + 1) + ' / ' + N + '…';
-    slidePNG(i).then(function(b){ return b.arrayBuffer(); }).then(function(buf){ files.push({ name: postBase() + '-' + String(i + 1).padStart(2, '0') + '.png', data: new Uint8Array(buf) }); next(i + 1); }, function(){ btn.disabled = false; btn.textContent = label; alert('Could not render slide ' + (i + 1) + '.'); });
+    slideImage(i).then(function(b){ return b.arrayBuffer(); }).then(function(buf){ files.push({ name: postBase() + '-' + String(i + 1).padStart(2, '0') + ext(), data: new Uint8Array(buf) }); next(i + 1); }, function(){ btn.disabled = false; btn.textContent = label; alert('Could not render slide ' + (i + 1) + '.'); });
   })(0);
 }
 

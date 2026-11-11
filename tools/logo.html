@@ -130,6 +130,14 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
     <div class="warn" id="warn">The font file couldn't be loaded (open this page from a web server rather than as a file). The preview is using a fallback, so exports won't match the real wordmark.</div>
 
 
+    <section class="post-only" id="savedSec">
+      <h2>Saved posts</h2>
+      <div class="row" style="margin-top:0;flex-wrap:nowrap"><img id="savedThumb" alt="" style="width:40px;height:50px;object-fit:cover;border-radius:6px;background:var(--chip);flex:none"><select id="savedSel" style="flex:1;min-width:0"></select></div>
+      <div class="row"><label class="f">Name <input type="text" id="postName" placeholder="Name this post (optional)" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:#fff;color:var(--ink)"></label></div>
+      <div class="row"><button class="btn ghost sm" id="newPost" type="button">+ New post</button><button class="btn ghost sm" id="dupPost" type="button">Duplicate</button><button class="btn ghost sm" id="delPost" type="button">Delete</button></div>
+      <p class="hint" id="savedHint">Your posts save automatically in this browser, photos included. Pick one above to carry on where you left off.</p>
+    </section>
+
     <section class="post-only">
       <h2>Post</h2>
       <div class="seg" id="postType">
@@ -1075,6 +1083,7 @@ function drawPost(){
   var d = postDims();
   $('metaText').textContent = (P.size) + ' × ' + Math.round(P.size * d.H / d.W) + ' px · ' + P.ratio + (N > 1 ? ' · slide ' + (P.cur + 1) + ' of ' + N : '') + (state.bg === 'pearl' ? ' · ' + pal().name : state.bg === 'refract' ? ' · ' + rpal().name : '');
   clearTimeout(thumbTimer); thumbTimer = setTimeout(drawStrip, 220);
+  scheduleSave();
 }
 function drawStrip(){
   var strip = $('strip'), N = P.slides.length;
@@ -1167,6 +1176,78 @@ function exportZip(){
   })(0);
 }
 
+
+/* ---- saved posts: autosaved to IndexedDB in this browser (photos included), reopen any of them from the dropdown ---- */
+var SNAP_KEYS = ['variant','dropStyle','logoColor','customLogo','bg','solid','customSolid','seed','palette','rpalette','glass','mesh','meshSize','layers','line','soft','grain','rcustom','randPal','core','sat','image','imageName','dim','pcustom'];
+var curId = null, lastSig = '', saveTimer = 0, DEFAULT_SNAP = null, initialSig = '', dbp = null;
+function openDB(){
+  if (dbp) return dbp;
+  dbp = new Promise(function(resolve, reject){
+    if (!window.indexedDB) return reject();
+    var rq = indexedDB.open('leamdrop-tools', 1);
+    rq.onupgradeneeded = function(){ rq.result.createObjectStore('posts', { keyPath: 'id' }); };
+    rq.onsuccess = function(){ resolve(rq.result); }; rq.onerror = function(){ reject(rq.error); };
+  });
+  return dbp;
+}
+function tx(mode, fn){ return openDB().then(function(db){ return new Promise(function(res, rej){ var t = db.transaction('posts', mode), r = fn(t.objectStore('posts')); t.oncomplete = function(){ res(r && r.result); }; t.onerror = function(){ rej(t.error); }; }); }); }
+function dbAll(){ return tx('readonly', function(st){ return st.getAll(); }); }
+function dbPut(rec){ return tx('readwrite', function(st){ return st.put(rec); }); }
+function dbDel(id){ return tx('readwrite', function(st){ return st.delete(id); }); }
+function snapshot(){ var o = {}; SNAP_KEYS.forEach(function(k){ o[k] = state[k]; }); return { s: o, p: P }; }
+function sigOf(){ return JSON.stringify(snapshot()); }
+function postTitle(p){ return (p.name && p.name.trim()) || ((p.slides && p.slides[0] && p.slides[0].h) || '').trim() || 'Untitled post'; }
+function thumbOf(){
+  return new Promise(function(resolve){
+    var o = buildSlideSVG(0, { embed: true, size: 180 }), url = URL.createObjectURL(new Blob([o.svg], { type: 'image/svg+xml' })), img = new Image();
+    img.onload = function(){ var c = document.createElement('canvas'); c.width = o.W; c.height = o.H; c.getContext('2d').drawImage(img, 0, 0, o.W, o.H); URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', .7)); };
+    img.onerror = function(){ URL.revokeObjectURL(url); resolve(''); }; img.src = url;
+  });
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 1200); }
+function saveNow(force){
+  clearTimeout(saveTimer);
+  var sig = sigOf(); if (!force && (sig === lastSig || (curId === null && sig === initialSig))) return Promise.resolve();
+  lastSig = sig; var id = curId || (curId = 'p' + Date.now()), snap = JSON.parse(sig), name = postTitle(P);
+  return thumbOf().then(function(th){ return dbPut({ id: id, name: name, savedAt: Date.now(), snap: snap, thumb: th }); }).then(refreshSaved, function(){});
+}
+function refreshSaved(){
+  return dbAll().then(function(all){
+    all.sort(function(a, b){ return b.savedAt - a.savedAt; });
+    var sel = $('savedSel'), opts = '';
+    if (!curId) opts += '<option value="">New post (not saved yet)</option>';
+    all.forEach(function(r){ var d = new Date(r.savedAt); opts += '<option value="' + r.id + '"' + (r.id === curId ? ' selected' : '') + '>' + esc(r.name) + ' · ' + d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + '</option>'; });
+    sel.innerHTML = opts; if (!curId) sel.value = '';
+    var cur = all.filter(function(r){ return r.id === curId; })[0]; $('savedThumb').src = cur && cur.thumb ? cur.thumb : ''; $('savedThumb').style.visibility = cur && cur.thumb ? 'visible' : 'hidden';
+    $('delPost').disabled = !curId; $('dupPost').disabled = !curId;
+  }, function(){ $('savedHint').textContent = 'Saving isn\'t available in this browser (private windows often block it), so posts will not be kept.'; $('savedSel').disabled = true; });
+}
+function applySnap(sn, id){
+  SNAP_KEYS.forEach(function(k){ if (sn.s[k] !== undefined) state[k] = JSON.parse(JSON.stringify(sn.s[k])); });
+  Object.keys(P).forEach(function(k){ delete P[k]; }); Object.assign(P, JSON.parse(JSON.stringify(sn.p)));
+  history = [state.seed]; histIdx = 0; curId = id; lastSig = sigOf();
+  $('postName').value = P.name || ''; buildSlides(); render(); refreshSaved();
+}
+function loadPost(id){
+  saveNow().then(function(){ return id ? dbAll() : null; }).then(function(all){
+    if (!id){ applySnap(JSON.parse(JSON.stringify(DEFAULT_SNAP)), null); return; }
+    var rec = all.filter(function(r){ return r.id === id; })[0]; if (rec) applySnap(rec.snap, id);
+  });
+}
+function wireSaved(){
+  DEFAULT_SNAP = JSON.parse(sigOf()); initialSig = JSON.stringify(DEFAULT_SNAP);
+  $('savedSel').addEventListener('change', function(e){ loadPost(e.target.value); });
+  $('postName').addEventListener('input', function(e){ P.name = e.target.value; scheduleSave(); });
+  $('newPost').addEventListener('click', function(){ saveNow().then(function(){ applySnap(JSON.parse(JSON.stringify(DEFAULT_SNAP)), null); }); });
+  $('dupPost').addEventListener('click', function(){ if (!curId) return; saveNow().then(function(){ P.name = postTitle(P) + ' copy'; $('postName').value = P.name; curId = null; return saveNow(true); }).then(function(){ render(); }); });
+  $('delPost').addEventListener('click', function(){
+    if (!curId || !confirm('Delete "' + postTitle(P) + '" from your saved posts?')) return;
+    var id = curId; curId = null; clearTimeout(saveTimer);
+    dbDel(id).then(function(){ return dbAll(); }).then(function(all){ all.sort(function(a, b){ return b.savedAt - a.savedAt; }); if (all[0]) applySnap(all[0].snap, all[0].id); else applySnap(JSON.parse(JSON.stringify(DEFAULT_SNAP)), null); });
+  });
+  refreshSaved();
+}
+
 function setMode(m){
   if (state.mode === m) return;
   state.mode = m; document.body.setAttribute('data-mode', m);
@@ -1176,6 +1257,7 @@ function setMode(m){
   render();
 }
 function wirePost(){
+  setTimeout(wireSaved, 0);
   Array.prototype.forEach.call(document.querySelectorAll('.tabs [role=tab]'), function(b){ b.addEventListener('click', function(){ setMode(b.dataset.mode); }); });
   $('postType').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) setType(b.dataset.v); });
   $('postRatio').addEventListener('change', function(e){ P.ratio = e.target.value; render(); });

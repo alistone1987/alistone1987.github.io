@@ -114,7 +114,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .mnav a,.mm-head a{text-decoration:none;display:flex;align-items:center;min-height:44px}
   .mbtn{background:none;border:0;color:var(--ink);font:inherit;font-size:13px;letter-spacing:-.02em;text-transform:uppercase;cursor:pointer;padding:10px 0 10px 14px;min-height:44px;display:inline-flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .mbtn:active,.mmenu a:active{opacity:.4}
-  .mmenu{display:block;position:fixed;inset:0;z-index:100;background:linear-gradient(to bottom,#FF5514,var(--paper) 30%);overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .45s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .mmenu{display:block;position:fixed;inset:0;z-index:100;background:linear-gradient(to bottom,rgba(255,85,20,.5),var(--paper) 30%),var(--paper);overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .45s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
   .mmenu.open{opacity:1;pointer-events:auto}
   .mmenu .mm-intro,.mmenu .mm-links a,.mmenu .mm-contact{opacity:0;transition:opacity .5s ease}
   .mmenu.open .mm-intro,.mmenu.open .mm-links a,.mmenu.open .mm-contact{opacity:1}

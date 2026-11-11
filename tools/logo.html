@@ -153,8 +153,9 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
       </div>
       <div class="row" id="bgModeRow"><label class="f">Background across slides
         <select id="bgMode">
-          <option value="continuous" selected>Continuous (flows from slide to slide)</option>
-          <option value="same">Same on every slide</option>
+          <option value="nudge" selected>Same, effect nudged slightly</option>
+          <option value="same">Exactly the same</option>
+          <option value="continuous">Continuous (flows across slides)</option>
           <option value="vary">Different on each slide</option>
         </select></label></div>
       <div class="tipbox" id="postTip">Instagram carousels hold up to 10 slides. 4:5 is the tallest feed size that isn't cropped, and the side margins keep text clear of the profile-grid crop.</div>
@@ -417,7 +418,7 @@ var state = {
 state.pcustom = { base: '#06122a', colors: ['#FF5514','#1f6bff','#2f3cff','#ff8a1f','#19c3ff','#ffd0a8','#6a4dff'] };
 state.mode = 'logo';
 state.post = {
-  type: 'single', ratio: '4:5', size: 1080, bgMode: 'continuous', cur: 0,
+  type: 'single', ratio: '4:5', size: 1080, bgMode: 'nudge', cur: 0,
   slides: [{ h: 'Headline that stops the scroll', b: 'One short line that earns the swipe' }],
   photoSize: 300, align: 'left', vpos: 'middle', numbers: true, cue: true, cta: 'Follow @leamingtondrop',
   logoPos: 'top-left', logoOn: 'all', logoSize: .2
@@ -1015,6 +1016,11 @@ function buildSlideSVG(i, opts){
   if (wide){ bg = backgroundArt(W * N, H, uid, Math.sqrt(W * H)); vbx = i * W; }
   else if (P.bgMode === 'vary' && N > 1){ var sv = state.seed; state.seed = sv + i * 7919; bg = backgroundArt(W, H, uid); state.seed = sv; }
   else bg = backgroundArt(W, H, uid);
+  if (P.bgMode === 'nudge' && i > 0 && N > 1 && (restore === 'pearl' || restore === 'refract')){
+    // same background, effect repositioned a little on each later slide: zoom 12% and slide it around inside that margin (slide 1 stays exactly as designed)
+    var ang = i * 2.4, nx = Math.cos(ang) * W * .045, ny = Math.sin(ang) * H * .045;
+    bg = { defs: bg.defs, body: '<g transform="translate(' + f(W / 2 + nx) + ' ' + f(H / 2 + ny) + ') scale(1.12) translate(' + f(-W / 2) + ' ' + f(-H / 2) + ')">' + bg.body + '</g>' };
+  }
   state.bg = restore;
   defs = defs.concat(bg.defs); body += bg.body;
   if (restore === 'transparent' && !bg.body) body = '<rect width="' + W + '" height="' + H + '" fill="#fff"/>';
@@ -1110,7 +1116,7 @@ function setType(t){
   var was = P.type; P.type = t;
   if (t === 'carousel'){
     // keep the single post exactly as it looks as slide 1: a continuous panorama would re-cut its background, so start on "same on every slide" (switch to Continuous any time)
-    if (was === 'single' && P.bgMode === 'continuous') P.bgMode = 'same'; while (P.slides.length < 3) P.slides.push(starter(P.slides.length)); }
+    if (was === 'single' && P.bgMode === 'continuous') P.bgMode = 'nudge'; while (P.slides.length < 3) P.slides.push(starter(P.slides.length)); }
   else { P.slides = [P.slides[Math.min(P.cur, P.slides.length - 1)] || P.slides[0]]; P.cur = 0; }
   buildSlides(); render();
 }

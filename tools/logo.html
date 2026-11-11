@@ -748,6 +748,14 @@ function previewLong(){
   var want = Math.ceil(Math.max(box.clientWidth, box.clientHeight) * dpr);
   return Math.max(600, Math.min(state.size, 2200, want));
 }
+/* Sizes the preview image to fit the box exactly, on both axes, in pixels (so every browser shows the whole artboard, centred). */
+function fitPreview(){
+  var box = $('preview'), img = $('prev'), r = parseFloat(img.dataset.ratio); if (!r) return;
+  var bw = box.clientWidth, bh = box.clientHeight; if (!bw || !bh) return;
+  var w = Math.min(bw, bh * r), h = w / r;
+  img.style.width = Math.floor(w) + 'px'; img.style.height = Math.floor(h) + 'px'; img.style.maxWidth = 'none'; img.style.maxHeight = 'none';
+}
+if (window.ResizeObserver) new ResizeObserver(fitPreview).observe(document.getElementById('preview')); else window.addEventListener('resize', fitPreview);
 var pending = 0;
 function render(){ if (pending) return; pending = requestAnimationFrame(function(){ pending = 0; draw(); }); }
 function draw(){
@@ -759,7 +767,7 @@ function draw(){
   var url = URL.createObjectURL(new Blob([out.svg], { type: 'image/svg+xml' }));
   var img = $('prev'); img.onload = function(){ if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = url; };
   img.src = url;
-  img.style.aspectRatio = out.W + ' / ' + out.H;
+  img.style.aspectRatio = out.W + ' / ' + out.H; img.dataset.ratio = out.W / out.H; fitPreview();
   $('metaText').textContent = full.W + ' × ' + full.H + ' px' + (state.bg === 'refract' ? ' · seed ' + state.seed + ' · ' + rpal().name : (state.bg === 'pearl' || (state.dropStyle === 'pearl' && hasDrop()) ? ' · seed ' + state.seed + ' · ' + pal().name : ''));
 }
 
@@ -996,7 +1004,7 @@ function drawPost(){
   var out = buildSlideSVG(P.cur, { embed: true, size: Math.max(540, Math.min(1080, want)) });
   var url = URL.createObjectURL(new Blob([out.svg], { type: 'image/svg+xml' }));
   var img = $('prev'); img.onload = function(){ if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = url; };
-  img.src = url; img.style.aspectRatio = out.W + ' / ' + out.H;
+  img.src = url; img.style.aspectRatio = out.W + ' / ' + out.H; img.dataset.ratio = out.W / out.H; fitPreview();
   var d = postDims();
   $('metaText').textContent = (P.size) + ' × ' + Math.round(P.size * d.H / d.W) + ' px · ' + P.ratio + (N > 1 ? ' · slide ' + (P.cur + 1) + ' of ' + N : '') + (state.bg === 'pearl' || state.bg === 'refract' ? ' · seed ' + state.seed : '');
   clearTimeout(thumbTimer); thumbTimer = setTimeout(drawStrip, 220);

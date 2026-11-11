@@ -171,7 +171,6 @@ body[data-mode="post"] .logo-only,body[data-mode="logo"] .post-only{display:none
         <div style="flex:1;min-width:150px"><span style="font-size:12px;color:var(--soft)">Vertical</span>
           <div class="seg" id="pVpos" style="margin-top:6px"><button type="button" data-v="top" aria-pressed="false">Top</button><button type="button" data-v="middle" aria-pressed="true">Middle</button><button type="button" data-v="bottom" aria-pressed="false">Bottom</button></div></div>
       </div>
-      <div class="row"><label class="f">Photo / emoji size <input type="range" id="photoSize" min="180" max="480" value="300"></label></div>
       <div id="carouselOpts">
         <label class="chk"><input type="checkbox" id="pNumbers" checked> Slide numbers (01 / 06)</label>
         <label class="chk"><input type="checkbox" id="pCue" checked> “Swipe” cue on all but the last slide</label>
@@ -951,9 +950,10 @@ function textArt(slide, i, N, W, region, color){
   var maxW = W - 2 * MG, bodyW = Math.min(maxW, 860), cover = i === 0;
   var HS = (cover ? [156, 138, 122, 108, 96, 84, 74, 64, 56] : [124, 112, 100, 90, 80, 72, 64, 56]), BS = [46, 42, 38, 34, 30];
   var ctaH = hasCta ? 96 : 0, regionH = region.y1 - region.y0, pick = null, defsOut = [], photoOut = '';
-  var phSize = P.photoSize, photoBlock = 0;
+  var photoBlock = 0, phSize = 300;
   var vis = slide.vis || (slide.img ? 'photo' : 'none'), hasPhoto = vis === 'photo' && slide.img, emoji = vis === 'emoji' && slide.emoji ? String(slide.emoji).trim() : '';
   if (hasPhoto || emoji){
+    phSize = emoji ? Math.round((+slide.emojiSize || 216) / .72) : (+slide.imgSize || 300);   // per-slide sizes (emoji size is the glyph size itself)
     if (regionH < phSize + 56 + 420) phSize = Math.max(180, regionH - 56 - 420);   // shrink the photo rather than squeeze the type
     photoBlock = (emoji ? Math.round(phSize * .72) + 44 : phSize + 56); regionH -= photoBlock;   // an emoji only needs room for itself, so it sits closer to the title
   }
@@ -976,9 +976,9 @@ function textArt(slide, i, N, W, region, color){
     y += photoBlock;
   }
   if (hasPhoto){   // a small photo above the text: white border, rounded corners, a very slight tilt and a very soft shadow
-    var fw = phSize, fh = phSize, bw2 = Math.round(phSize * .05), tilt = (i % 2 ? -1 : 1) * (P.photoTilt === undefined ? 1.6 : P.photoTilt), id = 'ph' + i + '_' + (++uidCounter);
+    var fw = phSize, fh = phSize, bw2 = Math.round(phSize * .025), tilt = (i % 2 ? -1 : 1) * (P.photoTilt === undefined ? 1.6 : P.photoTilt), id = 'ph' + i + '_' + (++uidCounter);
     var fx = center ? (W - fw) / 2 : MG + 4, fy = y;
-    defsOut.push('<filter id="' + id + 's" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="14" stdDeviation="26" flood-color="#000" flood-opacity=".18"/></filter>' +
+    defsOut.push('<filter id="' + id + 's" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000" flood-opacity=".3"/></filter>' +
       '<clipPath id="' + id + 'c"><rect x="' + f(fx + bw2) + '" y="' + f(fy + bw2) + '" width="' + f(fw - 2 * bw2) + '" height="' + f(fh - 2 * bw2) + '" rx="' + f(fw * .045) + '"/></clipPath>');
     photoOut = '<g transform="rotate(' + tilt + ' ' + f(fx + fw / 2) + ' ' + f(fy + fh / 2) + ')">' +
       '<rect x="' + f(fx) + '" y="' + f(fy) + '" width="' + f(fw) + '" height="' + f(fh) + '" rx="' + f(fw * .075) + '" fill="#fff" filter="url(#' + id + 's)"/>' +
@@ -1085,8 +1085,8 @@ var EMOJI_PICKS = ['🍕','🍔','🍺','🍷','☕','🥐','🍣','🌮','🍰'
 function visualHTML(sl, i){
   var v = sl.vis || (sl.img ? 'photo' : 'none');
   var seg = '<div class="seg vis" style="margin-top:2px">' + [['none', 'No image'], ['photo', 'Photo'], ['emoji', 'Emoji']].map(function(o){ return '<button type="button" data-vis="' + o[0] + '" aria-pressed="' + (v === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>';
-  if (v === 'photo') seg += '<div class="phrow" style="margin-top:8px"><button type="button" class="btn ghost sm" data-ph="add">' + (sl.img ? 'Change photo' : 'Add photo') + '</button>' + (sl.img ? '<img alt="" src="' + sl.img + '"><button type="button" class="btn ghost sm" data-ph="del">Remove</button>' : '') + '<input type="file" accept="image/*" hidden data-phfile data-i="' + i + '"></div>';
-  if (v === 'emoji') seg += '<input type="text" data-i="' + i + '" data-f="emoji" maxlength="12" placeholder="Type or paste an emoji (Ctrl+Cmd+Space on a Mac)" value="' + esc(sl.emoji || '').replace(/"/g, '&quot;') + '" style="margin-top:8px"><div class="emopick">' + EMOJI_PICKS.map(function(e){ return '<button type="button" data-emo="' + e + '">' + e + '</button>'; }).join('') + '</div>';
+  if (v === 'photo') seg += '<div class="phrow" style="margin-top:8px"><button type="button" class="btn ghost sm" data-ph="add">' + (sl.img ? 'Change photo' : 'Add photo') + '</button>' + (sl.img ? '<img alt="" src="' + sl.img + '"><button type="button" class="btn ghost sm" data-ph="del">Remove</button>' : '') + '<input type="file" accept="image/*" hidden data-phfile data-i="' + i + '"></div><label class="fl" style="margin-top:8px">Photo size<input type="range" data-i="' + i + '" data-f="imgSize" min="120" max="520" value="' + (sl.imgSize || 300) + '"></label>';
+  if (v === 'emoji') seg += '<input type="text" data-i="' + i + '" data-f="emoji" maxlength="12" placeholder="Type or paste an emoji (Ctrl+Cmd+Space on a Mac)" value="' + esc(sl.emoji || '').replace(/"/g, '&quot;') + '" style="margin-top:8px"><label class="fl" style="margin-top:8px">Emoji size<input type="range" data-i="' + i + '" data-f="emojiSize" min="90" max="420" value="' + (sl.emojiSize || 216) + '"></label><div class="emopick">' + EMOJI_PICKS.map(function(e){ return '<button type="button" data-emo="' + e + '">' + e + '</button>'; }).join('') + '</div>';
   seg += '<div class="phrow" style="margin-top:10px"><span style="font-size:12px;color:var(--soft)">Background</span><button type="button" class="btn ghost sm" data-bgimg="add">' + (sl.bgImg ? 'Change image' : 'Add image') + '</button>' + (sl.bgImg ? '<img alt="" src="' + sl.bgImg + '"><button type="button" class="btn ghost sm" data-bgimg="del">Remove</button>' : '') + '<input type="file" accept="image/*" hidden data-bgfile data-i="' + i + '"></div>';
   return seg;
 }
@@ -1099,7 +1099,7 @@ function buildSlides(){
       '</div>' + visualHTML(sl, i) + '<label class="fl">Title<input type="text" data-i="' + i + '" data-f="h" spellcheck="true" placeholder="The big headline" value="' + esc(sl.h).replace(/"/g, '&quot;') + '"></label>' +
       '<label class="fl">Short line<textarea data-i="' + i + '" data-f="b" spellcheck="true" placeholder="One short supporting line (optional)">' + esc(sl.b) + '</textarea></label></div>';
   }).join('');
-  $('addSlide').disabled = N >= MAXSLIDES;
+  $('addSlide').disabled = N >= MAXSLIDES; paintRanges();
   $('slideBtns').classList.toggle('hidden', !car);
   $('carouselOpts').classList.toggle('hidden', !car);
   $('bgModeRow').classList.toggle('hidden', !car);
@@ -1176,7 +1176,7 @@ function wirePost(){
     };
     im.onerror = function(){ URL.revokeObjectURL(url); alert('Could not read that image.'); }; im.src = url;
   });
-  host.addEventListener('input', function(e){ var el = e.target.closest('[data-f]'); if (!el) return; P.slides[+el.dataset.i][el.dataset.f] = el.value; render(); });
+  host.addEventListener('input', function(e){ var el = e.target.closest('[data-f]'); if (!el) return; P.slides[+el.dataset.i][el.dataset.f] = el.type === 'range' ? +el.value : el.value; if (el.type === 'range') paintRanges(); render(); });
   host.addEventListener('focusin', function(e){ var c = e.target.closest('.slide'); if (!c) return; var i = +c.dataset.i; if (i !== P.cur){ P.cur = i; Array.prototype.forEach.call(host.children, function(el, k){ el.classList.toggle('cur', k === i); }); render(); } });
   host.addEventListener('click', function(e){
     var vb = e.target.closest('button[data-vis]'), eb = e.target.closest('button[data-emo]');
@@ -1192,7 +1192,6 @@ function wirePost(){
     buildSlides(); render();
   });
   $('addSlide').addEventListener('click', function(){ if (P.slides.length >= MAXSLIDES) return; P.slides.splice(P.cur + 1, 0, starter(1)); P.cur++; buildSlides(); render(); });
-  $('photoSize').addEventListener('input', function(e){ P.photoSize = +e.target.value; render(); });
   $('pAlign').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.align = b.dataset.v; render(); } });
   $('pVpos').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ P.vpos = b.dataset.v; render(); } });
   $('pNumbers').addEventListener('change', function(e){ P.numbers = e.target.checked; render(); });
@@ -1209,7 +1208,7 @@ function wirePost(){
 function syncPost(){
   setPressed($('postType'), 'data-v', P.type); setPressed($('pAlign'), 'data-v', P.align); setPressed($('pVpos'), 'data-v', P.vpos);
   setPressed($('logoPosTop'), 'data-v', P.logoPos); setPressed($('logoPosBot'), 'data-v', P.logoPos); $('logoOff').setAttribute('aria-pressed', P.logoPos === 'none' ? 'true' : 'false');
-  $('photoSize').value = P.photoSize; $('postRatio').value = P.ratio; $('postSize').value = P.size; $('bgMode').value = P.bgMode; $('logoOn').value = P.logoOn; $('logoSize').value = Math.round(P.logoSize * 100);
+  $('postRatio').value = P.ratio; $('postSize').value = P.size; $('bgMode').value = P.bgMode; $('logoOn').value = P.logoOn; $('logoSize').value = Math.round(P.logoSize * 100);
   $('logoOnWrap').classList.toggle('hidden', P.type !== 'carousel' || P.logoPos === 'none');
   paintRanges();
 }

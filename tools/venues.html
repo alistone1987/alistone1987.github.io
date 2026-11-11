@@ -24,13 +24,25 @@ tr.tags.pre td,tr.pre td{border-bottom:0}
 .tg{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:5px}
 .tg b{font-weight:600;color:var(--mut);font-size:11px;width:58px;text-transform:uppercase;letter-spacing:.04em}
 .chip{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:3px 9px;font-size:12px}
-.chip.on{background:var(--o);border-color:var(--o);color:#000;font-weight:600}
+.chip.on{background:var(--o);border-color:var(--o);color:#000;font-weight:600;cursor:grab}
+.chip.on:active{cursor:grabbing}
+.chip.on.first{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--o)}
+.chip em{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;background:#000;color:#fff;border-radius:999px;padding:1px 6px;margin-left:4px}
+.chip.dragging{opacity:.4}
+.chip.over{outline:2px dashed var(--o);outline-offset:2px}
 .chip.addtag{border-style:dashed;color:var(--mut)}
 #pop{position:fixed;z-index:50;width:260px;max-height:320px;display:none;flex-direction:column;background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden}
 #pop.open{display:flex}#pop input{margin:8px;width:calc(100% - 16px)}
 #pop ul{list-style:none;margin:0;padding:0 4px 6px;overflow:auto}
 #pop li{padding:6px 10px;border-radius:7px;cursor:pointer;display:flex;gap:8px;align-items:center}
 #pop li:hover,#pop li.hl{background:var(--chip)}#pop li .ck{margin-left:auto;color:var(--o);font-weight:700}
+td.ph{width:118px;white-space:nowrap}
+.gfind{font-size:11px;color:var(--mut);margin-left:6px;text-decoration:none;border-bottom:1px solid var(--line)}
+.gfind:hover{color:var(--o)}
+.avb.drop{border-color:var(--o)}
+.avb{width:32px;height:32px;padding:0;border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;border:1px dashed var(--line);background:var(--chip);color:var(--mut);vertical-align:middle;corner-shape:round}
+.avb img{width:100%;height:100%;object-fit:cover;display:block}
+.avx{padding:0 6px;background:none;color:var(--mut);vertical-align:middle}
 tr.sel td{background:color-mix(in srgb,var(--o) 14%,transparent)}
 .mapw{position:sticky;top:70px;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:816/1000}
 .mapw svg{width:100%;height:100%;display:block;cursor:crosshair}
@@ -52,8 +64,8 @@ tr.sel td{background:color-mix(in srgb,var(--o) 14%,transparent)}
  <select id="np" class="u"><option value="0">Normal order</option><option value="1">Priority: shown ~80% of the time</option></select>
  <input class="u" id="nu" placeholder="Google Maps link (optional, otherwise a search for the name is used)">
  <div class="row"><button class="p" id="add">Add venue</button><span>then click the map to place it</span></div></div>
- <p class="hint">Click a row to select it, then click the map to move its pin. Changes are only live once saved into <code>venues.json</code> and pushed.</p>
- <table><thead><tr><th>Name</th><th>Stars</th><th>Priority</th><th>Link</th><th></th></tr></thead><tbody id="tb"></tbody></table>
+ <p class="hint"><b>Tags:</b> drag to reorder. The first tag (marked <em style="font-style:normal;font-weight:700">★ on map</em>) is the one whose emoji shows in the venue's circle on the map. It comes from "It's a" first, then "It does".<br>Click a row to select it, then click the map to move its pin. Changes are only live once saved into <code>venues.json</code> and pushed.</p>
+ <table><thead><tr><th>Photo</th><th>Name</th><th>Stars</th><th>Priority</th><th>Link</th><th></th></tr></thead><tbody id="tb"></tbody></table>
 </section>
 <section><div class="mapw" id="map"></div></section>
 </main>
@@ -65,14 +77,16 @@ var EMO={'Pub':'🍺','Gastropub':'🍻','Restaurant':'🍽️','Bar':'🍸','Co
 'Burger':'🍔','Fine dining':'✨','European':'🇪🇺','British':'🇬🇧','Italian':'🍝','French':'🥐','Spanish / Tapas':'🥘','Greek':'🥙','Mediterranean':'🫒','Indian':'🍛','Chinese':'🥟','Japanese':'🍱','Sushi':'🍣','Thai':'🍜','Vietnamese':'🍲','Korean':'🥢','Mexican':'🌮','Middle Eastern':'🧆','American':'🇺🇸','Pizza':'🍕','Steak':'🥩','Seafood':'🦞','Fish & chips':'🐟','Wings':'🍗','Vegetarian / vegan':'🥦','Breakfast & brunch':'🍳','Afternoon tea':'🫖','Sunday roast':'🍖','Desserts':'🍰','Casual dining':'🍴'};
 var GROUPS=[['type',"It's a"],['does','It does']];
 function lab(t){return (EMO[t]?EMO[t]+' ':'')+esc(t)}
-function chips(v,k){return (v[k]||[]).map(function(t){return '<button class="chip on" data-k="'+k+'" data-t="'+esc(t)+'" title="Remove">'+lab(t)+' ×</button>'}).join('')+'<button class="chip addtag" data-k="'+k+'" data-open="1">+ Add ▾</button>'}
+function chips(v,k){
+ var firstOverall=function(idx){return idx===0&&(k==='type'||!(v.type&&v.type.length))};
+ return (v[k]||[]).map(function(t,idx){var f=firstOverall(idx);return '<button class="chip on'+(f?' first':'')+'" draggable="true" data-k="'+k+'" data-t="'+esc(t)+'" data-idx="'+idx+'" title="'+(f?'This tag\'s emoji shows on the map. ':'')+'Drag to reorder (or Alt+←/→). Click to remove.">'+lab(t)+(f?' <em>★ on map</em>':'')+' ×</button>'}).join('')+'<button class="chip addtag" data-k="'+k+'" data-open="1">+ Add ▾</button>'}
 var V=[],sel=-1,hov=-1,handle=null,svg=null,NS='http://www.w3.org/2000/svg';
 var $=function(i){return document.getElementById(i)};
 function mergeTags(){V.forEach(function(v){['type','does'].forEach(function(k){(v[k]||[]).forEach(function(t){if(TAGS[k].indexOf(t)<0)TAGS[k].push(t)})})})}
 function status(t){$('st').textContent=t}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 function render(){
- $('tb').innerHTML=V.map(function(v,i){return '<tr data-i="'+i+'" class="pre'+(i===sel?' sel':'')+'"><td class="n"><input data-f="name" value="'+esc(v.name)+'"></td><td class="r"><select data-f="r">'+[5,4,3,2,1].map(function(n){return '<option'+(n==v.r?' selected':'')+'>'+n+'</option>'}).join('')+'</select><span class="stars">'+'⭐'.repeat(v.r)+'</span></td><td class="c"><select data-f="pri"><option value="0">Normal</option><option value="1"'+(v.pri?' selected':'')+'>Priority (~80%)</option></select></td><td><input data-f="url" placeholder="auto" value="'+esc(v.url||'')+'"></td><td class="x"><button data-del="1" title="Delete">×</button></td></tr><tr data-i="'+i+'" class="tags'+(i===sel?' sel':'')+'"><td colspan="5">'+GROUPS.map(function(g){return '<div class="tg"><b>'+g[1]+'</b>'+chips(v,g[0])+'</div>'}).join('')+'</td></tr>'}).join('');
+ $('tb').innerHTML=V.map(function(v,i){return '<tr data-i="'+i+'" class="pre'+(i===sel?' sel':'')+'"><td class="ph"><button class="avb" data-photo="1" title="'+(v.img?'Replace photo':'Add photo')+'">'+(v.img?'<img src="'+v.img+'" alt="">':'+')+'</button>'+(v.img?'<button class="avx" data-clrimg="1" title="Remove photo">×</button>':'')+'<a class="gfind" target="_blank" rel="noopener" title="Find this place on Google, copy its photo, then select this row and paste (Cmd+V) here" href="'+(v.url||('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.name+' Leamington Spa')))+'">Google</a><input type="file" accept="image/*" hidden></td><td class="n"><input data-f="name" value="'+esc(v.name)+'"></td><td class="r"><select data-f="r">'+[5,4,3,2,1].map(function(n){return '<option'+(n==v.r?' selected':'')+'>'+n+'</option>'}).join('')+'</select><span class="stars">'+'⭐'.repeat(v.r)+'</span></td><td class="c"><select data-f="pri"><option value="0">Normal</option><option value="1"'+(v.pri?' selected':'')+'>Priority (~80%)</option></select></td><td><input data-f="url" placeholder="auto" value="'+esc(v.url||'')+'"></td><td class="x"><button data-del="1" title="Delete">×</button></td></tr><tr data-i="'+i+'" class="tags'+(i===sel?' sel':'')+'"><td colspan="6">'+GROUPS.map(function(g){return '<div class="tg"><b>'+g[1]+'</b>'+chips(v,g[0])+'</div>'}).join('')+'</td></tr>'}).join('');
  dots();
 }
 function dots(){
@@ -83,6 +97,14 @@ function dots(){
  svg.appendChild(g);
 }
 $('tb').addEventListener('input',function(e){var tr=e.target.closest('tr'),i=+tr.dataset.i,f=e.target.dataset.f;V[i][f]=f==='r'||f==='pri'?+e.target.value:e.target.value;if(f==='pri'&&!V[i].pri)delete V[i].pri;if(f==='r')tr.querySelector('.stars').textContent='⭐'.repeat(V[i].r);if(f==='url'&&!e.target.value)delete V[i].url;if(f==='name')dots()});
+var drag=null;
+function moveTag(i,k,from,to){var a=V[i][k];if(!a||from===to||to<0||to>=a.length)return;var t=a.splice(from,1)[0];a.splice(to,0,t);sel=i;render();status('Reordered tags for '+V[i].name+' (unsaved)')}
+$('tb').addEventListener('dragstart',function(e){var c=e.target.closest&&e.target.closest('.chip.on');if(!c)return;var i=+c.closest('tr').dataset.i;drag={i:i,k:c.dataset.k,idx:+c.dataset.idx};e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',c.dataset.t)}catch(_){}c.classList.add('dragging')});
+$('tb').addEventListener('dragend',function(e){drag=null;document.querySelectorAll('.chip.dragging,.chip.over').forEach(function(x){x.classList.remove('dragging','over')})});
+$('tb').addEventListener('dragover',function(e){if(!drag)return;var c=e.target.closest('.chip');if(!c||c.dataset.k!==drag.k||+c.closest('tr').dataset.i!==drag.i)return;e.preventDefault();document.querySelectorAll('.chip.over').forEach(function(x){x.classList.remove('over')});c.classList.add('over')});
+$('tb').addEventListener('drop',function(e){if(!drag)return;var c=e.target.closest('.chip');if(!c||c.dataset.k!==drag.k||+c.closest('tr').dataset.i!==drag.i)return;e.preventDefault();
+ var to=c.classList.contains('addtag')?V[drag.i][drag.k].length-1:+c.dataset.idx;var d=drag;drag=null;moveTag(d.i,d.k,d.idx,to)});
+$('tb').addEventListener('keydown',function(e){var c=e.target.closest&&e.target.closest('.chip.on');if(!c||!e.altKey||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;e.preventDefault();var i=+c.closest('tr').dataset.i,k=c.dataset.k,idx=+c.dataset.idx;moveTag(i,k,idx,idx+(e.key==='ArrowRight'?1:-1))});
 var pop=null,hl=0;
 function toggle(i,k,t){var v=V[i],a=v[k]||(v[k]=[]),j=a.indexOf(t);if(j>=0)a.splice(j,1);else a.push(t);if(!a.length)delete v[k];sel=i;render();if(pop)anchor()}
 function anchor(){var b=document.querySelector('tr.tags[data-i="'+pop.i+'"] .chip.addtag[data-k="'+pop.k+'"]');if(!b)return;var r=b.getBoundingClientRect(),el=$('pop');el.style.left=Math.min(r.left,innerWidth-270)+'px';el.style.top=(r.bottom+6+320>innerHeight?Math.max(8,r.top-326):r.bottom+6)+'px'}
@@ -105,7 +127,24 @@ $('pl').addEventListener('click',function(e){pick(e.target.closest('li'))});
 document.addEventListener('mousedown',function(e){if(pop&&!e.target.closest('#pop')&&!e.target.closest('.chip.addtag'))closePop()});
 $('tb').addEventListener('mouseover',function(e){var tr=e.target.closest('tr');var i=tr?+tr.dataset.i:-1;if(i!==hov){hov=i;dots()}});
 $('tb').addEventListener('mouseleave',function(){hov=-1;dots()});
+function squareThumb(file,done){
+ var img=new Image(),url=URL.createObjectURL(file);
+ img.onload=function(){var S=96,c=document.createElement('canvas');c.width=c.height=S;var x=c.getContext('2d'),m=Math.min(img.width,img.height);
+  x.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S,S);URL.revokeObjectURL(url);done(c.toDataURL('image/jpeg',.82))};
+ img.onerror=function(){URL.revokeObjectURL(url);status('Could not read that image')};img.src=url}
+$('tb').addEventListener('change',function(e){if(e.target.type!=='file'||!e.target.files[0])return;var i=+e.target.closest('tr').dataset.i;
+ squareThumb(e.target.files[0],function(d){V[i].img=d;sel=i;render();status('Photo set for '+V[i].name+' (unsaved)')})});
+document.addEventListener('paste',function(e){   // copy a photo from Google, select the venue's row, paste
+ if(sel<0||/INPUT|TEXTAREA|SELECT/.test((e.target.tagName||'')))return;
+ var it=[].slice.call((e.clipboardData&&e.clipboardData.items)||[]).filter(function(x){return x.type.indexOf('image/')===0})[0];if(!it)return;
+ e.preventDefault();var f=it.getAsFile(),i=sel;squareThumb(f,function(d){V[i].img=d;render();status('Pasted photo for '+V[i].name+' (unsaved)')})});
+$('tb').addEventListener('dragover',function(e){if(e.target.closest('.avb')){e.preventDefault();e.target.closest('.avb').classList.add('drop')}});
+$('tb').addEventListener('dragleave',function(e){var b=e.target.closest('.avb');if(b)b.classList.remove('drop')});
+$('tb').addEventListener('drop',function(e){var b=e.target.closest('.avb');if(!b)return;e.preventDefault();var f=e.dataTransfer.files[0];if(!f||f.type.indexOf('image/')!==0)return;var i=+e.target.closest('tr').dataset.i;squareThumb(f,function(d){V[i].img=d;sel=i;render();status('Photo set for '+V[i].name+' (unsaved)')})});
 $('tb').addEventListener('click',function(e){var tr=e.target.closest('tr');if(!tr)return;var i=+tr.dataset.i;
+ if(e.target.closest('.gfind')){sel=i;return}
+ if(e.target.closest('[data-photo]')){tr.querySelector('input[type=file]').click();return}
+ if(e.target.closest('[data-clrimg]')){delete V[i].img;render();return}
  var c=e.target.closest('.chip');
  if(c){var k=c.dataset.k;
   if(c.dataset.open){openPop(i,k);return}
@@ -115,7 +154,7 @@ $('tb').addEventListener('click',function(e){var tr=e.target.closest('tr');if(!t
  sel=i;render()});
 $('add').onclick=function(){var n=$('nn').value.trim();if(!n)return $('nn').focus();var v={name:n,x:408,y:500,r:+$('nr').value};if($('np').value==='1')v.pri=1;if($('nu').value.trim())v.url=$('nu').value.trim();V.push(v);sel=V.length-1;$('nn').value='';$('nu').value='';render();status('Click the map to place '+n);document.querySelector('#tb tr:last-child').scrollIntoView({block:'nearest'})};
 $('nn').addEventListener('keydown',function(e){if(e.key==='Enter')$('add').click()});
-function json(){return '[\n'+V.map(function(v){var o={name:v.name,x:Math.round(v.x*10)/10,y:Math.round(v.y*10)/10,r:v.r};if(v.type&&v.type.length)o.type=v.type;if(v.does&&v.does.length)o.does=v.does;if(v.pri)o.pri=1;if(v.url)o.url=v.url;return ' '+JSON.stringify(o)}).join(',\n')+'\n]\n'}
+function json(){return '[\n'+V.map(function(v){var o={name:v.name,x:Math.round(v.x*10)/10,y:Math.round(v.y*10)/10,r:v.r};if(v.type&&v.type.length)o.type=v.type;if(v.does&&v.does.length)o.does=v.does;if(v.pri)o.pri=1;if(v.url)o.url=v.url;if(v.img)o.img=v.img;return ' '+JSON.stringify(o)}).join(',\n')+'\n]\n'}
 $('open').onclick=async function(){
  if(!window.showOpenFilePicker)return status('Your browser can\'t edit files in place: use Download, then replace venues.json in the repo.');
  try{var h=await showOpenFilePicker({types:[{accept:{'application/json':['.json']}}]});handle=h[0];V=JSON.parse(await(await handle.getFile()).text());mergeTags();sel=-1;render();status('Editing '+handle.name+' in place')}catch(e){}};

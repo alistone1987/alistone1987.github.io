@@ -918,7 +918,7 @@ function textArt(slide, i, N, W, region, color){
     var hl = wrapText(head, HS[a], 600, maxW); if (hl.tooWide && a < HS.length - 1) continue;
     for (var b = 0; b < BS.length; b++){
       var bl = body ? wrapText(body, BS[b], 400, bodyW) : { lines: [] };
-      var hH = hl.lines.length * HS[a] * .98, bH = bl.lines.length ? 36 + bl.lines.length * BS[b] * 1.36 : 0, cH = hasCta ? 56 + ctaH : 0;
+      var hH = hl.lines.length * HS[a] * .9, bH = bl.lines.length ? 36 + bl.lines.length * BS[b] * 1.36 : 0, cH = hasCta ? 56 + ctaH : 0;
       if (hH + bH + cH <= regionH || (a === HS.length - 1 && b === BS.length - 1)){ pick = { hs: HS[a], bs: BS[b], hl: hl.lines, bl: bl.lines, hH: hH, bH: bH, cH: cH }; break; }
     }
   }
@@ -927,7 +927,7 @@ function textArt(slide, i, N, W, region, color){
   if (P.vpos === 'middle') y = region.y0 + (regionH - total) / 2; else if (P.vpos === 'bottom') y = region.y1 - total;
   var center = P.align === 'center', x = center ? W / 2 : MG, anchor = center ? 'middle' : 'start', out = '';
   var hFont = 'font-family="' + FAMILY + '" font-weight="600" font-size="' + pick.hs + '" letter-spacing="' + f(-pick.hs * .03) + '" style="font-variation-settings:\'opsz\' 96"';
-  pick.hl.forEach(function(ln, n){ out += '<text x="' + f(x) + '" y="' + f(y + n * pick.hs * .98 + pick.hs * .8) + '" text-anchor="' + anchor + '" fill="' + color + '" ' + hFont + '>' + esc(ln) + '</text>'; });
+  pick.hl.forEach(function(ln, n){ out += '<text x="' + f(x) + '" y="' + f(y + n * pick.hs * .9 + pick.hs * .78) + '" text-anchor="' + anchor + '" fill="' + color + '" ' + hFont + '>' + esc(ln) + '</text>'; });
   y += pick.hH;
   if (pick.bl.length){
     y += 36;

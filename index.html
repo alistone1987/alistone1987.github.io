@@ -60,11 +60,39 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .logo-wrap{position:relative}
 .crayon-pad{position:absolute;inset:0;width:100%;height:100%;z-index:2;display:block}
 @media (hover:hover) and (pointer:fine){.logo-wrap.crayon-on,.logo-wrap.crayon-on *{cursor:none}}
-.crayon-cursor{position:fixed;left:0;top:0;z-index:300;pointer-events:none;opacity:0;transition:opacity .15s ease;will-change:transform}
+.crayon-cursor{--c1:#FF8048;--c2:#F0500F;--c3:#A92F05;--t1:#FFA678;--t2:#FF5514;--t3:#C23A08;--cap:#B83306;--band:#4F1503;position:fixed;left:0;top:0;z-index:300;pointer-events:none;opacity:0;transition:opacity .15s ease;will-change:transform}
 .crayon-cursor.on{opacity:1}
 .crayon-cursor svg{position:absolute;left:-2px;top:-20px;width:150px;height:40px;overflow:visible;transform-origin:2px 20px;transform:rotate(-42deg);transition:transform .15s ease;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
 .crayon-cursor.down svg{transform:rotate(-36deg) scale(.98)}
 @media (max-width:720px),(hover:none){.crayon-cursor{display:none}}
+
+/* crayon colour picker: black popover opened from the drop in the nav */
+.cpick{position:fixed;left:0;top:0;z-index:400;width:240px;padding:18px;border-radius:calc(18px * var(--rs,1));background:#0B0B0B;color:#F3F2EE;box-shadow:0 22px 60px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.07);opacity:0;transform:translateY(-10px) scale(.9);transform-origin:50% 0;pointer-events:none;visibility:hidden;transition:opacity .2s ease,transform .22s ease,visibility 0s linear .22s}
+.cpick.open{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .22s ease,transform .45s cubic-bezier(.34,1.56,.64,1),visibility 0s}
+.cpick>*{opacity:0;transform:translateY(8px);transition:opacity .15s ease,transform .15s ease}
+.cpick.open>*{opacity:1;transform:none;transition:opacity .35s ease calc(70ms + var(--i) * 55ms),transform .5s cubic-bezier(.22,1,.36,1) calc(70ms + var(--i) * 55ms)}
+.cp-track{position:relative;height:30px;border-radius:15px;margin-bottom:14px;cursor:pointer;touch-action:none;outline:none}
+.cp-track:focus-visible{box-shadow:0 0 0 2px #FF5514}
+.cp-th{position:absolute;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border:3px solid #F3F2EE;border-radius:50%;box-sizing:border-box;box-shadow:0 1px 5px rgba(0,0,0,.45);transition:transform .15s ease;pointer-events:none}
+.cp-track.drag .cp-th{transform:scale(1.15)}
+.cp-sw{display:flex;gap:4px;justify-content:space-between;margin-top:4px}
+.cp-sw button.rb{background:conic-gradient(from 0deg,#ff3b30,#ffcc00,#34c759,#00c7be,#007aff,#af52de,#ff3b30)}
+.cp-sw button{flex:none;aspect-ratio:1;width:20px;height:20px;padding:0;border:0;border-radius:50%;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease}
+.cp-sw button:hover{transform:scale(1.15)}
+.cp-sw button.on{box-shadow:0 0 0 2px #0B0B0B,0 0 0 4px #F3F2EE}
+.cp-sw button:focus-visible{outline:2px solid #FF5514;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.cpick,.cpick.open,.cpick>*,.cpick.open>*{transition:opacity .01s!important;transform:none!important}}
+@media (max-width:720px){.cpick{display:none}}
+
+/* Corner smoothing at 100% (iOS/Figma-style continuous corners), the same approach as the Saidwell build:
+   native `corner-shape` where supported (Chromium), with a lazy-loaded CornerKit clip-path fallback for Safari/Firefox (script at the bottom).
+   Circles and pills stay perfectly round. A squircle reads tighter than a plain arc, so radii get a small bump where it's native. */
+:root{--rs:1}
+@supports (corner-shape: squircle){
+  :root{--rs:1.25}
+  *,*::before,*::after{corner-shape:superellipse(2)}   /* the iOS squircle */
+  .dot,.cp-th,.cp-sw button,.quote figcaption img,.pin .ring,.pin .label,.btn,.cp-track,.mbtn,.loader-art i,.crayon-cursor *,.gdrop *{corner-shape:round}
+}
 
 .band{border-top:.5px solid var(--hair);border-bottom:.5px solid var(--hair);padding:14px var(--pad);display:flex;justify-content:space-between;align-items:center;gap:32px;min-height:82px}
 .tagline{margin:0;font-size:clamp(20px,1.9vw,27px);font-weight:500;letter-spacing:-.02em;line-height:1.2;max-width:480px;font-variation-settings:"opsz" 36}
@@ -122,11 +150,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .reel ul{display:flex;gap:16px;list-style:none;margin:0;padding:0;width:max-content;will-change:transform}
 .reel img{-webkit-user-drag:none;pointer-events:none}
 /* Photos load into placeholder boxes and fade in, so they never pop in. The box keeps its square size (width/height attributes + aspect-ratio). */
-.reel li{background:var(--chip);border-radius:10px;overflow:hidden}
+.reel li{background:var(--chip);border-radius:calc(20px * var(--rs,1));overflow:hidden}
 .reel li img{opacity:0;transition:opacity .8s cubic-bezier(.22,1,.36,1) var(--d,0s)}
 .reel li img.in{opacity:1}
 @media (prefers-reduced-motion:reduce){.reel li img{transition:none}}
-.reel li img{height:clamp(260px,36vw,460px);width:auto;aspect-ratio:1/1;object-fit:cover;border-radius:10px}
+.reel li img{height:clamp(260px,36vw,460px);width:auto;aspect-ratio:1/1;object-fit:cover;border-radius:calc(20px * var(--rs,1))}
 @keyframes slide{to{transform:translateX(calc(-50% - 8px))}}
 .reel-note{margin-top:14px;font-size:15px;color:var(--soft)}
 .reel-note a{text-underline-offset:3px}
@@ -164,7 +192,7 @@ h2{margin:0;font-weight:600;font-variation-settings:"opsz" 96;font-size:clamp(44
 .faves ul{list-style:none;margin:clamp(32px,5vw,64px) 0 0;padding:0;display:grid;grid-template-columns:1fr;gap:clamp(32px,4vw,56px) clamp(20px,3vw,40px)}
 @media (min-width:700px){.faves ul{grid-template-columns:1fr 1fr}}
 .faves a.card{display:block;text-decoration:none}
-.faves .card img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:10px}
+.faves .card img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:calc(20px * var(--rs,1))}
 .faves .card h3{margin:18px 0 4px;font-size:clamp(22px,2vw,28px);font-weight:600;letter-spacing:-.01em;font-variation-settings:"opsz" 36}
 .faves .card p{margin:0;color:var(--soft)}
 .faves .card:hover h3{text-decoration:underline;text-underline-offset:4px}
@@ -367,7 +395,7 @@ html.loading{overflow:hidden}
     <a class="n3" href="#how">How we drop</a>
     <a class="n4" href="#contact">Contact</a>
   </div>
-  <a class="mark" href="#top" aria-label="Back to top"><span class="gdrop" aria-hidden="true"><span class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></span></span></a>
+  <a class="mark" href="#top" id="cpOpen" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Choose crayon colour"><span class="gdrop" aria-hidden="true"><span class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></span></span></a>
 </nav>
 
 <div class="mnav">
@@ -1124,8 +1152,8 @@ html.loading{overflow:hidden}
 </script>
 <div class="crayon-cursor" id="crayonCursor" aria-hidden="true"><svg viewBox="0 0 150 40" xmlns="http://www.w3.org/2000/svg">
 <defs>
-<linearGradient id="cgW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8048"/><stop offset=".4" stop-color="#F0500F"/><stop offset="1" stop-color="#A92F05"/></linearGradient>
-<linearGradient id="cgT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFA678"/><stop offset=".5" stop-color="#FF5514"/><stop offset="1" stop-color="#C23A08"/></linearGradient>
+<linearGradient id="cgW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--c1)"/><stop offset=".4" style="stop-color:var(--c2)"/><stop offset="1" style="stop-color:var(--c3)"/></linearGradient>
+<linearGradient id="cgT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--t1)"/><stop offset=".5" style="stop-color:var(--t2)"/><stop offset="1" style="stop-color:var(--t3)"/></linearGradient>
 <filter id="cgP" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="4" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 -.12"/></filter>
 <clipPath id="cgB"><rect x="26" y="9" width="108" height="22"/></clipPath>
 </defs>
@@ -1134,10 +1162,9 @@ html.loading{overflow:hidden}
 <rect x="26" y="9" width="108" height="22" fill="url(#cgW)"/>
 <rect x="26" y="9" width="108" height="22" filter="url(#cgP)" clip-path="url(#cgB)" opacity=".55"/>
 <rect x="26" y="10.6" width="108" height="3" rx="1.5" fill="#fff" opacity=".25"/>
-<g fill="#4F1503" opacity=".9"><rect x="31" y="9" width="5" height="22"/><rect x="39" y="9" width="2.5" height="22"/><rect x="112" y="9" width="2.5" height="22"/><rect x="118" y="9" width="5" height="22"/></g>
-<rect x="49" y="11.5" width="54" height="17" rx="8.5" fill="#4F1503" opacity=".92"/>
-<rect x="49.8" y="12.3" width="52.4" height="15.4" rx="7.7" fill="none" stroke="#FF8A5A" stroke-opacity=".7" stroke-width=".8"/>
-<rect x="134" y="10" width="5" height="20" rx="2.2" fill="#B83306"/>
+<g style="fill:var(--band)" opacity=".9"><rect x="31" y="9" width="5" height="22"/><rect x="39" y="9" width="2.5" height="22"/><rect x="112" y="9" width="2.5" height="22"/><rect x="118" y="9" width="5" height="22"/></g>
+<rect x="49" y="11.5" width="54" height="17" rx="8.5" style="fill:var(--band)" opacity=".92"/>
+<rect x="134" y="10" width="5" height="20" rx="2.2" style="fill:var(--cap)"/>
 </svg></div>
 <script>
 (function(){
@@ -1158,6 +1185,17 @@ html.loading{overflow:hidden}
   var lo = 1, hi = 0; for (i = 0; i < grain.length; i++){ if (grain[i] < lo) lo = grain[i]; if (grain[i] > hi) hi = grain[i]; }
   for (i = 0; i < grain.length; i++) grain[i] = (grain[i] - lo) / (hi - lo);
   var SHADES = ['#FF5514', '#F24E10', '#FF6428', '#E8470C'];
+  function hsl(h, sat, l){ return 'hsl(' + Math.round(h) + ',' + Math.round(sat) + '%,' + Math.round(Math.max(0, Math.min(100, l))) + '%)'; }
+  var rb = false, rbH = 15, rbS = 95, rbL = 55;
+  function applyColour(h, sat, l){
+    SHADES = [hsl(h, sat, l), hsl(h - 2, sat, l - 4), hsl(h + 3, sat, l + 5), hsl(h, sat, l - 8)];
+    var v = { '--c1': hsl(h, sat, l + 14), '--c2': hsl(h, sat, l), '--c3': hsl(h, sat, l - 22), '--t1': hsl(h, sat, l + 22), '--t2': hsl(h, sat, l), '--t3': hsl(h, sat, l - 18), '--cap': hsl(h, sat, l - 24), '--band': hsl(h, sat * 0.9, Math.max(8, l * 0.22)) };
+    for (var k in v) cur.style.setProperty(k, v[k]);
+  }
+  // recolours both the wax you draw with and the crayon cursor; rainbow mode slides the hue along as you draw
+  window.__setCrayon = function(h, sat, l, rainbow){
+    rb = !!rainbow; if (rb){ rbS = Math.max(85, sat); rbL = l; applyColour(rbH, rbS, rbL); } else applyColour(h, sat, l);
+  };
   function size(){
     var w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h || (w === W && h === H)) return;
     var old = null; if (W && H){ old = document.createElement('canvas'); old.width = cv.width; old.height = cv.height; old.getContext('2d').drawImage(cv, 0, 0); }
@@ -1168,7 +1206,7 @@ html.loading{overflow:hidden}
   function radius(){ return Math.max(6, Math.min(14, W / 150)); }
   function dab(px, py, R){
     // one stamp of wax: a faint waxy body plus lots of grainy specks inside the brush circle
-    ctx.globalAlpha = 0.10; ctx.fillStyle = '#FF5514'; ctx.beginPath(); ctx.arc(px * dpr, py * dpr, R * 0.8 * dpr, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = 0.10; ctx.fillStyle = SHADES[0]; ctx.beginPath(); ctx.arc(px * dpr, py * dpr, R * 0.8 * dpr, 0, 6.2832); ctx.fill();
     for (var k = 0; k < 26; k++){
       var a = Math.random() * 6.2832, r = R * Math.sqrt(Math.random()), x = px + Math.cos(a) * r, y = py + Math.sin(a) * r;
       var n = grain[(((y * 1.3) | 0) & 255) * G + (((x * 1.3) | 0) & 255)];
@@ -1182,6 +1220,7 @@ html.loading{overflow:hidden}
   function local(e){ var b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
   function stroke(from, to){
     var R = radius(), dx = to[0] - from[0], dy = to[1] - from[1], d = Math.hypot(dx, dy), step = Math.max(1.2, R * 0.3), n = Math.max(1, Math.ceil(d / step));
+    if (rb){ rbH = (rbH + d * 0.9) % 360; applyColour(rbH, rbS, rbL); }   // rainbow: the colour keeps changing as you draw
     for (var k = 1; k <= n; k++) dab(from[0] + dx * k / n, from[1] + dy * k / n, R);
   }
   function place(e){ cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'; }
@@ -1210,6 +1249,85 @@ html.loading{overflow:hidden}
   function up(e){ if (!down) return; down = false; scheduleWipe(); cur.classList.remove('down'); try { cv.releasePointerCapture(e.pointerId); } catch (_) {} var b = cv.getBoundingClientRect(); if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom){ cur.classList.remove('on'); wrap.classList.remove('crayon-on'); } }
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   window.addEventListener('scroll', function(){ if (!down && cur.classList.contains('on')){ var b = cv.getBoundingClientRect(), y = parseFloat(cur.style.transform.split(',')[1]) || 0; if (y < b.top || y > b.bottom){ cur.classList.remove('on'); wrap.classList.remove('crayon-on'); } } }, { passive: true });
+})();
+</script>
+<div class="cpick" id="cpick" role="dialog" aria-label="Crayon colour" aria-hidden="true">
+  <div class="cp-track" id="cpHue" role="slider" tabindex="0" aria-label="Hue" aria-valuemin="0" aria-valuemax="360" style="--i:0"><span class="cp-th"></span></div>
+  <div class="cp-track" id="cpShade" role="slider" tabindex="0" aria-label="Shade" aria-valuemin="0" aria-valuemax="100" style="--i:1"><span class="cp-th"></span></div>
+  <div class="cp-sw" id="cpSw" style="--i:2"></div>
+</div>
+<script>
+(function(){
+  var btn = document.getElementById('cpOpen'), pop = document.getElementById('cpick'); if (!btn || !pop) return;
+  var hueEl = document.getElementById('cpHue'), shEl = document.getElementById('cpShade'), swEl = document.getElementById('cpSw');
+  var SW = [[15,100,54],[148,78,45],[212,92,55],[268,82,64],[4,88,56],[46,100,56],[0,0,20]];   // orange (default), green, blue, purple, red, yellow, black
+  var st = { h: 15, s: 100, l: 54, rb: false };
+  var LMAX = 88, LMIN = 14;
+  function hsl(h, s, l){ return 'hsl(' + h + ',' + s + '%,' + l + '%)'; }
+  swEl.innerHTML = SW.map(function(c, i){ return '<button type="button" data-i="' + i + '" aria-label="Colour ' + (i + 1) + '" style="background:' + hsl(c[0], c[1], c[2]) + '"></button>'; }).join('') + '<button type="button" data-rb="1" class="rb" aria-label="Rainbow: changes colour as you draw"></button>';
+  hueEl.style.background = 'linear-gradient(to right,' + [0,60,120,180,240,300,360].map(function(h){ return hsl(h, 100, 55); }).join(',') + ')';
+  function render(){
+    hueEl.firstElementChild.style.left = (st.h / 360 * 100) + '%'; hueEl.setAttribute('aria-valuenow', Math.round(st.h));
+    var t = (LMAX - st.l) / (LMAX - LMIN); shEl.firstElementChild.style.left = (t * 100) + '%'; shEl.setAttribute('aria-valuenow', Math.round(t * 100));
+    shEl.style.background = 'linear-gradient(to right,' + hsl(st.h, st.s, LMAX) + ',' + hsl(st.h, st.s, 52) + ',' + hsl(st.h, st.s, LMIN) + ')';
+    hueEl.firstElementChild.style.background = hsl(st.h, 100, 55); shEl.firstElementChild.style.background = hsl(st.h, st.s, st.l);
+    [].forEach.call(swEl.children, function(b, i){ if (b.dataset.rb){ b.classList.toggle('on', !!st.rb); return; } var c = SW[i]; b.classList.toggle('on', !st.rb && Math.abs(c[0] - st.h) < 1 && Math.abs(c[2] - st.l) < 1); });
+    hueEl.style.opacity = st.rb ? 0.35 : 1;
+    if (window.__setCrayon) window.__setCrayon(st.h, st.s, st.l, st.rb);
+  }
+  function save(){}   // not remembered: the crayon always starts orange
+  function drag(el, apply){
+    function at(e){ var b = el.getBoundingClientRect(); apply(Math.max(0, Math.min(1, (e.clientX - b.left) / b.width))); render(); }
+    el.addEventListener('pointerdown', function(e){ el.setPointerCapture(e.pointerId); el.classList.add('drag'); at(e); });
+    el.addEventListener('pointermove', function(e){ if (el.classList.contains('drag')) at(e); });
+    function end(){ el.classList.remove('drag'); save(); }
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    el.addEventListener('keydown', function(e){
+      var d = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 0.02 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -0.02 : 0; if (!d) return; e.preventDefault();
+      var cur = el === hueEl ? st.h / 360 : (LMAX - st.l) / (LMAX - LMIN); apply(Math.max(0, Math.min(1, cur + d))); render(); save();
+    });
+  }
+  drag(hueEl, function(t){ st.h = Math.round(t * 360); st.rb = false; });
+  drag(shEl, function(t){ st.l = Math.round(LMAX - t * (LMAX - LMIN)); });
+  swEl.addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; if (b.dataset.rb){ st.rb = true; } else { var c = SW[+b.dataset.i]; st = { h: c[0], s: c[1], l: c[2], rb: false }; } render(); save(); });
+  function place(){
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, x = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+    pop.style.left = x + 'px'; pop.style.top = (r.bottom + 12) + 'px'; 
+  }
+  function setOpen(on){
+    if (on) place();
+    pop.classList.toggle('open', on); pop.setAttribute('aria-hidden', on ? 'false' : 'true'); btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); setOpen(!pop.classList.contains('open')); });
+  document.addEventListener('pointerdown', function(e){ if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) setOpen(false); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && pop.classList.contains('open')){ setOpen(false); btn.focus(); } });
+  window.addEventListener('resize', function(){ if (pop.classList.contains('open')) place(); });
+  render();
+})();
+</script>
+<script>
+/* Squircle fallback for engines without native `corner-shape` (Safari / Firefox today): lazy-loads CornerKit (MIT) and clips the
+   rounded photo tiles to a 100%-smoothing squircle. Chromium uses the CSS above and loads nothing. Pills and circles are skipped. */
+(function(){
+  if (window.CSS && CSS.supports && CSS.supports('corner-shape: squircle')) return;
+  var SEL = '.reel li, .faves .card img', SMOOTHING = 1, ck = null, pending = false;
+  function apply(el){
+    if (!ck || el._ck) return;
+    var r = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, side = Math.min(el.offsetWidth, el.offsetHeight);
+    if (r < 4 || !side || r >= side / 2 - 0.5) return;
+    el._ck = true; try { ck.apply(el, { radius: r, smoothing: SMOOTHING }); } catch (_) { el._ck = false; }
+  }
+  function sweep(){ pending = false; [].forEach.call(document.querySelectorAll(SEL), apply); }
+  function queue(){ if (!pending){ pending = true; requestAnimationFrame(sweep); } }
+  var s = document.createElement('script'); s.src = 'vendor/cornerkit.js'; s.async = true;
+  s.onload = function(){
+    if (!window.CornerKit) return;
+    try { ck = new window.CornerKit(); } catch (_) { return; }
+    sweep(); window.addEventListener('load', sweep);
+    new MutationObserver(queue).observe(document.body, { childList: true, subtree: true });   // the reel rebuilds its tiles (shuffle, live Instagram)
+    window.addEventListener('resize', function(){ [].forEach.call(document.querySelectorAll(SEL), function(el){ el._ck = false; }); queue(); });
+  };
+  document.head.appendChild(s);
 })();
 </script>
 </body>

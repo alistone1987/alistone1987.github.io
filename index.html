@@ -1204,7 +1204,7 @@ html.loading{overflow:hidden}
 /* Hovering "Three is the magic number": the heading fades out, each line in LINES fades in as typing, holds, fades out, then the heading returns. */
 (function(){
   var sec = document.getElementById('how'), h = sec && sec.querySelector('h2'); if (!h) return;
-  var LINES = ["Yes, it is, it's the magic number", "Somewhere in your community", "It’s the magic number"]; window.__magicLines = LINES;   // <- the two lines to type out
+  var LINES = ["Yes, it is, it's the magic number", "Somewhere in Leam community", "It’s the magic number"]; window.__magicLines = LINES;   // <- the two lines to type out
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)'), orig = h.textContent, run = 0, busy = false;
   h.style.transition = 'opacity .4s ease';
   function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }

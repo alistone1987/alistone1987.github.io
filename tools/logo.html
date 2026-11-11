@@ -955,7 +955,7 @@ function textArt(slide, i, N, W, region, color){
   var vis = slide.vis || (slide.img ? 'photo' : 'none'), hasPhoto = vis === 'photo' && slide.img, emoji = vis === 'emoji' && slide.emoji ? String(slide.emoji).trim() : '';
   if (hasPhoto || emoji){
     if (regionH < phSize + 56 + 420) phSize = Math.max(180, regionH - 56 - 420);   // shrink the photo rather than squeeze the type
-    photoBlock = phSize + 56; regionH -= photoBlock;
+    photoBlock = (emoji ? Math.round(phSize * .72) + 44 : phSize + 56); regionH -= photoBlock;   // an emoji only needs room for itself, so it sits closer to the title
   }
   for (var a = 0; a < HS.length && !pick; a++){
     var hl = wrapText(head, HS[a], 600, maxW); if (hl.tooWide && a < HS.length - 1) continue;
@@ -971,7 +971,7 @@ function textArt(slide, i, N, W, region, color){
   if (P.vpos === 'middle') y = region.y0 + ((region.y1 - region.y0) - total) / 2;
   var center = P.align === 'center', x = center ? W / 2 : MG, anchor = center ? 'middle' : 'start', out = '';
   if (emoji){   // a big emoji above the text, acting as an icon
-    var es = Math.round(phSize * .9), ex = center ? W / 2 : MG - 6;
+    var es = Math.round(phSize * .72), ex = center ? W / 2 : MG - 6;
     photoOut = '<text x="' + f(ex) + '" y="' + f(y + es * .82) + '" text-anchor="' + anchor + '" font-size="' + es + '" font-family="\'Apple Color Emoji\',\'Segoe UI Emoji\',\'Noto Color Emoji\',sans-serif">' + esc(emoji) + '</text>';
     y += photoBlock;
   }
@@ -1107,8 +1107,10 @@ function buildSlides(){
   $('exportHint').textContent = car ? 'PNG at Instagram\'s size. The ZIP has every slide numbered in order, ready to upload as a carousel.' : 'PNG at Instagram\'s native size.';
 }
 function setType(t){
-  P.type = t;
-  if (t === 'carousel'){ while (P.slides.length < 3) P.slides.push(starter(P.slides.length)); }
+  var was = P.type; P.type = t;
+  if (t === 'carousel'){
+    // keep the single post exactly as it looks as slide 1: a continuous panorama would re-cut its background, so start on "same on every slide" (switch to Continuous any time)
+    if (was === 'single' && P.bgMode === 'continuous') P.bgMode = 'same'; while (P.slides.length < 3) P.slides.push(starter(P.slides.length)); }
   else { P.slides = [P.slides[Math.min(P.cur, P.slides.length - 1)] || P.slides[0]]; P.cur = 0; }
   buildSlides(); render();
 }

@@ -52,8 +52,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .bar .mark svg{width:22px;height:28px;fill:currentColor;transition:transform .5s cubic-bezier(.22,1,.36,1)}
 .bar .mark:hover .gdrop{transform:translateY(3px)}
 /* the nav drop is the same iridescent glass drop as the loader, just smaller (so the blurs and lighting are scaled down to match) */
+.m-gdrop{display:none}
 .gdrop{display:block;position:relative;width:24px;aspect-ratio:22/28;filter:url(#pearl-sm);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .7s ease}
-html.hero-on .bar .gdrop{opacity:0;transition:none}   /* while the big drop is on its way down, it stands in for this one */
+html.hero-on .bar .gdrop,html.hero-on .mnav .gdrop{opacity:0;transition:none}   /* while the big drop is on its way down, it stands in for this one */
 .gdrop .loader-art i{filter:blur(2px)}
 
 /* hero wordmark + tagline band */
@@ -115,6 +116,7 @@ html.hero-on .bar .gdrop{opacity:0;transition:none}   /* while the big drop is o
   .band .intro{display:none}
   .mnav{display:flex;position:sticky;top:env(safe-area-inset-top,0px);z-index:60;height:var(--bar);align-items:center;justify-content:space-between;padding:0 12px;border-bottom:.5px solid var(--hair);background:var(--paper)}
   .mnav .wm,.mm-head .wm{font-size:23.5px}
+  .mnav .m-gdrop{display:block;position:absolute;left:50%;top:50%;translate:-50% -50%;pointer-events:none}   /* the small glass drop sits in the middle of the bar */
   .mnav a,.mm-head a{text-decoration:none;display:flex;align-items:center;min-height:44px}
   .mbtn{background:none;border:0;color:var(--ink);font:inherit;font-size:13px;letter-spacing:-.02em;text-transform:uppercase;cursor:pointer;padding:10px 0 10px 14px;min-height:44px;display:inline-flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .mbtn:active,.mmenu a:active{opacity:.4}
@@ -369,7 +371,7 @@ footer a:focus-visible{outline-color:#FF5514}
 html.loading{overflow:hidden}
 .loader{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;clip-path:inset(0 0 0 0)}
 .loader.go{clip-path:inset(0 0 100% 0);transition:clip-path 1.05s cubic-bezier(.76,0,.24,1)}   /* the pane peels away from the bottom */
-.loader-drop{width:clamp(96px,9vw,100px);aspect-ratio:22/28;position:relative;filter:url(#pearl) drop-shadow(0 0 24px rgba(120,90,255,.22));transition:opacity .6s ease,transform .9s cubic-bezier(.22,1,.36,1)}
+.loader-drop{width:clamp(58px,9vw,100px);aspect-ratio:22/28;position:relative;filter:url(#pearl) drop-shadow(0 0 24px rgba(120,90,255,.22));transition:opacity .6s ease,transform .9s cubic-bezier(.22,1,.36,1)}
 .loader.go .loader-drop{opacity:0;transform:scale(.94)}
 .loader-art{position:absolute;inset:0;overflow:hidden;background:#07282c;
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 28'%3E%3Cpath d='M11 0C11 0 0 12.6 0 18a11 10 0 0 0 22 0C22 12.6 11 0 11 0Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
@@ -396,8 +398,20 @@ html.loading{overflow:hidden}
     linear-gradient(112deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.05) 30%,rgba(255,255,255,0) 46%)}
 .loader-art::after{z-index:1;content:"";position:absolute;inset:0;background:radial-gradient(ellipse 38% 32% at 50% 64%,rgba(6,34,38,.94) 0%,rgba(8,44,48,.8) 40%,rgba(8,44,48,0) 100%);animation:breathe 6s ease-in-out infinite alternate}
 @keyframes breathe{from{transform:scale(1)}to{transform:scale(1.12)}}
-.hero-drop{position:absolute;left:0;top:0;z-index:2;width:clamp(88px,9vw,110px);aspect-ratio:22/28;pointer-events:none;visibility:hidden;will-change:transform;filter:url(#pearl) drop-shadow(0 0 24px rgba(120,90,255,.22))}
+.hero-drop{position:absolute;left:0;top:0;z-index:8;width:clamp(88px,9vw,110px);aspect-ratio:22/28;pointer-events:none;visibility:hidden;will-change:transform;filter:url(#pearl) drop-shadow(0 0 24px rgba(120,90,255,.22))}
 @media (prefers-reduced-motion:reduce){.hero-drop{display:none}}
+/* touch phones: skip the SVG lighting filter (it renders flat and washed out on a lot of Android GPUs) and build the glass from plain CSS instead: richer colour, a shaded rim and a bright window highlight */
+@media (hover:none) and (pointer:coarse){
+  .loader-drop,.hero-drop{filter:drop-shadow(0 0 20px rgba(130,90,255,.4))}
+  .loader-drop .loader-art,.hero-drop .loader-art{background:#0b1e2a;box-shadow:inset -7px -12px 20px rgba(0,0,30,.55),inset 5px 7px 14px rgba(255,255,255,.28),inset 0 0 0 1px rgba(255,255,255,.18)}
+  /* no CSS filters at all inside the masked drop (blur/saturate layers can drop out on Android and leave just the dark base showing); the blobs already have soft radial edges */
+  .loader-drop .loader-art .field,.hero-drop .loader-art .field,.loader-drop .loader-art i,.hero-drop .loader-art i{filter:none}
+  .loader-drop .loader-art,.hero-drop .loader-art{background:#1b5a78;box-shadow:inset -6px -10px 16px rgba(0,0,40,.28),inset 5px 7px 14px rgba(255,255,255,.3)}
+  .loader-drop .loader-art::after,.hero-drop .loader-art::after{opacity:.3}
+  .gdrop{filter:none}
+  .gdrop .loader-art{background:#1b5a78;box-shadow:inset -2px -3px 5px rgba(0,0,40,.3),inset 1.5px 2px 4px rgba(255,255,255,.3)}
+  .gdrop .loader-art .field,.gdrop .loader-art i{filter:none}   /* the dark pool in the middle of the belly, much lighter */
+}
 @media (prefers-reduced-motion:reduce){.loader-art{animation:none}.loader-art i,.loader-art::after{animation:none}.loader.go{transition-duration:.4s}.loader-drop{transition-duration:.2s}}
 </style>
 </head>
@@ -465,6 +479,7 @@ html.loading{overflow:hidden}
 
 <div class="mnav">
   <a href="#top" aria-label="The Leamington Drop, home"><span class="wm small" role="img" aria-label="Leamdrop"><svg aria-hidden="true" viewBox="0 -700 461 720" style="width:.461em"><path transform="scale(1,-1)" d="M46 0 L46 660 L173 660 L173 40 L181 40 L192.5 97 L453 97 L453 0 Z"/></svg><svg aria-hidden="true" viewBox="0 -700 529 720" style="width:.529em"><path transform="scale(1,-1)" d="M283 -14Q215 -14 166.5 6.5Q118 27 87 63.5Q56 100 41.5 148Q27 196 27 253Q27 310 41.5 361Q56 412 86.5 451.5Q117 491 163.5 513.5Q210 536 274 536Q335 536 380.5 515Q426 494 454.5 455.5Q483 417 493.5 364.5Q504 312 496 249L106 243V318L416 323L381 254Q384 328 373.5 362Q363 396 338.5 414.5Q314 433 274 433Q231 433 203.5 411Q176 389 163 350Q150 311 150 258Q150 171 184 127.5Q218 84 285 84Q317 84 338 93Q359 102 371.5 118Q384 134 388.5 153.5Q393 173 392 193L509 186Q511 148 499 112.5Q487 77 460 48.5Q433 20 389 3Q345 -14 283 -14Z"/></svg><span aria-hidden="true">amdrop</span></span></a>
+  <span class="gdrop m-gdrop" aria-hidden="true"><span class="loader-art"><b class="field"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b></span></span>
   <button class="mbtn" type="button" aria-expanded="false" aria-controls="mmenu" data-menu="open"><span class="dot"></span>Menu</button>
 </div>
 <div class="mmenu" id="mmenu" role="dialog" aria-modal="true" aria-label="Menu">
@@ -786,9 +801,10 @@ html.loading{overflow:hidden}
     if (!tagEmoji.list) tagEmoji.list = Object.keys(TAGEMO).map(function(k){ return TAGEMO[k]; }).filter(function(e){ return !/\uD83C[\uDDE6-\uDDFF]/.test(e); });
     return tagEmoji.list[Math.floor(Math.random() * tagEmoji.list.length)];
   }
-  var heroEl = outro.querySelector('.hero-drop'), heroMark = document.querySelector('.bar .gdrop'), hLastY = null;
+  var heroEl = outro.querySelector('.hero-drop'), heroMark = null, hLastY = null;
   var H_IN = [0.03, 0.36];
   function heroFor(p){
+    heroMark = [].slice.call(document.querySelectorAll('.bar .gdrop, .mnav .gdrop')).filter(function(g){ return g.offsetWidth > 0; })[0];   // whichever bar is showing (desktop or phone)
     if (!heroEl || !heroMark || reduce.matches) return;
     var live = p > H_IN[0] - 0.012 && p < H_IN[1];
     document.documentElement.classList.toggle('hero-on', live || (p >= H_IN[1] && p < H_IN[1] + 0.02));
